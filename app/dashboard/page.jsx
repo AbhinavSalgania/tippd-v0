@@ -108,6 +108,7 @@ export default function DashboardPage() {
               'id, service_period_id, employee_id, role, kitchen_contribution, bartender_contribution, bartender_share_received, net_tips, amount_owed_to_house, service_periods ( id, period_date, period_type ), payout_line_items ( id, service_period_payout_id, sort_order, description, amount )'
             )
             .eq('employee_id', s.employeeId)
+            .order('service_period_id', { ascending: false })
 
           if (!relRes.error) {
             payouts = Array.isArray(relRes.data) ? relRes.data : []
@@ -119,6 +120,7 @@ export default function DashboardPage() {
                 'id, service_period_id, employee_id, role, kitchen_contribution, bartender_contribution, bartender_share_received, net_tips, amount_owed_to_house'
               )
               .eq('employee_id', s.employeeId)
+              .order('service_period_id', { ascending: false })
 
             if (pRes.error) throw pRes.error
             payouts = Array.isArray(pRes.data) ? pRes.data : []
@@ -406,7 +408,15 @@ export default function DashboardPage() {
                               ) : (
                                 <ul className="mt-2 space-y-1 text-sm text-zinc-700">
                                   {items.map((li) => (
-                                    <li key={li.id || `${p.id}-${li.sort_order}`}>- {li.description}</li>
+                                    <li
+                                      key={
+                                        li.id ||
+                                        `${p.id}-${String(li.sort_order)}-${String(li.description || '')}-${String(li.amount ?? '')}`
+                                      }
+                                    >
+                                      - {li.description}{' '}
+                                      {li.amount != null ? `(${formatMoney(li.amount)})` : ''}
+                                    </li>
                                   ))}
                                 </ul>
                               )}
