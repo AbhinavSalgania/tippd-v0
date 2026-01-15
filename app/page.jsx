@@ -27,6 +27,7 @@ function readSession() {
 export default function HomePage() {
   const router = useRouter()
 
+  const [mounted, setMounted] = useState(false)
   const [employeeCode, setEmployeeCode] = useState('')
   const [pin, setPin] = useState('')
 
@@ -34,16 +35,25 @@ export default function HomePage() {
   const [error, setError] = useState(null)
 
   const isDev = process.env.NODE_ENV === 'development'
-  const debugSessionRaw = useMemo(() => {
-    if (!isDev || typeof window === 'undefined') return null
-    return window.sessionStorage.getItem(SESSION_KEY)
-  }, [isDev, isSubmitting])
+  const [debugSessionRaw, setDebugSessionRaw] = useState(null)
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+    if (!isDev) return
+    if (typeof window === 'undefined') return
+    setDebugSessionRaw(window.sessionStorage.getItem(SESSION_KEY))
+  }, [mounted, isDev, isSubmitting])
+
+  useEffect(() => {
+    if (!mounted) return
     const session = readSession()
     if (session) router.push('/dashboard')
     else if (typeof window !== 'undefined') window.sessionStorage.removeItem(SESSION_KEY)
-  }, [router])
+  }, [router, mounted])
 
   async function onSubmit(e) {
     e.preventDefault()
@@ -137,7 +147,7 @@ export default function HomePage() {
             </button>
           </form>
 
-          {isDev ? (
+          {isDev && mounted ? (
             <div className="mt-6 rounded-md border border-zinc-200 bg-zinc-50 p-3">
               <div className="text-xs font-semibold text-zinc-700">Debug (dev only)</div>
               <div className="mt-2 text-xs text-zinc-700">
