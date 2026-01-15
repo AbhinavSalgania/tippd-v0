@@ -1,14 +1,14 @@
 begin;
 
 -- Employees (2 servers, bartenders, kitchen + kitchen manager)
-insert into public.employees (employee_code, display_name, pin)
+insert into public.employees (employee_code, display_name, pin, role)
 values
-  ('S001', 'Server 1', '1111'),
-  ('S002', 'Server 2', '2222'),
-  ('B001', 'Bartender 1', '3333'),
-  ('B002', 'Bartender 2', '4444'),
-  ('K001', 'Kitchen 1', '5555'),
-  ('KM01', 'Kitchen Manager', '6666')
+  ('S001', 'Server 1', '1111', 'server'),
+  ('S002', 'Server 2', '2222', 'server'),
+  ('B001', 'Bartender 1', '3333', 'bartender'),
+  ('B002', 'Bartender 2', '4444', 'bartender'),
+  ('K001', 'Kitchen 1', '5555', 'kitchen'),
+  ('KM01', 'Kitchen Manager', '6666', 'kitchen_manager')
 on conflict (employee_code) do nothing;
 
 -- Service periods: one lunch + one dinner on same date
