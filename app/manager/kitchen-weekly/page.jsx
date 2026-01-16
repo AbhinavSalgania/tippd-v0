@@ -1,8 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { calculateWeeklyKitchenPayouts } from '@/lib/lib/tipCalculator'
+import AppHeader from '@/app/components/AppHeader'
+import { requireManager } from '@/app/lib/requireRole'
 
 function asNumber(value, fieldName) {
   const n = Number(value)
@@ -36,6 +39,10 @@ function formatPeriodLabel(p) {
 }
 
 export default function ManagerKitchenWeeklyPage() {
+  const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+  const [isAllowed, setIsAllowed] = useState(false)
+
   const [weekStartDate, setWeekStartDate] = useState('')
 
   const [bohEmployees, setBohEmployees] = useState([])
@@ -151,10 +158,21 @@ export default function ManagerKitchenWeeklyPage() {
   }, [])
 
   useEffect(() => {
-    loadBohEmployees()
-  }, [loadBohEmployees])
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
+    if (!mounted) return
+    setIsAllowed(requireManager(router))
+  }, [mounted, router])
+
+  useEffect(() => {
+    if (!mounted || !isAllowed) return
+    loadBohEmployees()
+  }, [loadBohEmployees, mounted, isAllowed])
+
+  useEffect(() => {
+    if (!mounted || !isAllowed) return
     setComputedResult(null)
     setComputeError(null)
     setWriteError(null)
@@ -163,7 +181,7 @@ export default function ManagerKitchenWeeklyPage() {
 
     if (!weekId) return
     loadStoredPreviewForWeek(weekId)
-  }, [weekId, loadStoredPreviewForWeek])
+  }, [weekId, loadStoredPreviewForWeek, mounted, isAllowed])
 
   const computeAndPersistWeeklyPayouts = useCallback(async () => {
     setComputeError(null)
@@ -359,8 +377,20 @@ export default function ManagerKitchenWeeklyPage() {
 
   const isBusy = isLoadingEmployees || isComputing || isLoadingStored
 
+  if (!mounted || !isAllowed) {
+    return (
+      <div className="min-h-screen bg-zinc-50 text-zinc-900">
+        <AppHeader title="Manager" subtitle="Kitchen weekly payouts" />
+        <div className="mx-auto max-w-5xl px-4 py-10 text-sm text-zinc-600">Checking access…</div>
+      </div>
+    )
+  }
+
   return (
-    <div style={{ padding: 16, fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif' }}>
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      <AppHeader title="Manager" subtitle="Kitchen weekly payouts" />
+      <main className="mx-auto max-w-5xl px-4 py-6">
+        <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
       <h2 style={{ margin: 0, marginBottom: 12 }}>Manager · Weekly kitchen payouts</h2>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
@@ -550,6 +580,8 @@ export default function ManagerKitchenWeeklyPage() {
           </table>
         )}
       </div>
+        </div>
+      </main>
     </div>
   )
 }

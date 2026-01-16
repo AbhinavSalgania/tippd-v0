@@ -3,26 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-
-const SESSION_KEY = 'tippd_session'
-
-function readSession() {
-  if (typeof window === 'undefined') return null
-  const raw = window.sessionStorage.getItem(SESSION_KEY)
-  if (!raw) return null
-  try {
-    const parsed = JSON.parse(raw)
-    const ok =
-      parsed &&
-      typeof parsed === 'object' &&
-      typeof parsed.employeeId === 'string' &&
-      typeof parsed.employeeCode === 'string' &&
-      typeof parsed.role === 'string'
-    return ok ? parsed : null
-  } catch {
-    return null
-  }
-}
+import AppHeader from '@/app/components/AppHeader'
+import { readSession, SESSION_KEY } from '@/app/lib/requireRole'
 
 function formatMoney(value) {
   const n = Number(value)
@@ -60,17 +42,6 @@ export default function DashboardPage() {
   const role = session?.role || ''
   const isFoh = role === 'server' || role === 'bartender'
   const isBoh = role === 'kitchen' || role === 'kitchen_manager'
-
-  const headerEmployeeLabel = useMemo(() => {
-    const code = session?.employeeCode || ''
-    const name = session?.displayName || ''
-    return name ? `${code} · ${name}` : code
-  }, [session])
-
-  const logout = useCallback(() => {
-    if (typeof window !== 'undefined') window.sessionStorage.removeItem(SESSION_KEY)
-    router.push('/')
-  }, [router])
 
   const toggleDetails = useCallback((payoutId) => {
     setExpandedPayoutIds((prev) => {
@@ -288,26 +259,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-          <div>
-            <div className="text-sm font-semibold text-zinc-900">Tippd</div>
-            <div className="text-xs text-zinc-500">Dashboard</div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-700">
-              {headerEmployeeLabel || '—'}
-            </div>
-            <button
-              onClick={logout}
-              className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader title="Dashboard" subtitle="Employee view" />
 
       <main className="mx-auto max-w-5xl px-4 py-6">
         {error ? (

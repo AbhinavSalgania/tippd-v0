@@ -1,7 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import AppHeader from '@/app/components/AppHeader'
+import { requireManager } from '@/app/lib/requireRole'
 
 function formatPeriodLabel(p) {
   const date = p?.period_date ?? ''
@@ -22,6 +25,10 @@ function defaultRoleWeightForEmployeeRole(role) {
 }
 
 export default function ManagerKitchenHoursPage() {
+  const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+  const [isAllowed, setIsAllowed] = useState(false)
+
   const [servicePeriods, setServicePeriods] = useState([])
   const [selectedServicePeriodId, setSelectedServicePeriodId] = useState('')
   const [bohEmployees, setBohEmployees] = useState([])
@@ -149,9 +156,19 @@ export default function ManagerKitchenHoursPage() {
   }, [])
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+    setIsAllowed(requireManager(router))
+  }, [mounted, router])
+
+  useEffect(() => {
+    if (!mounted || !isAllowed) return
     loadPeriods()
     loadBohEmployees()
-  }, [loadPeriods, loadBohEmployees])
+  }, [loadPeriods, loadBohEmployees, mounted, isAllowed])
 
   // When period changes, load logs and prefill inputs.
   useEffect(() => {
@@ -264,8 +281,20 @@ export default function ManagerKitchenHoursPage() {
 
   const isBusy = isLoadingPeriods || isLoadingEmployees || isLoadingLogs || isSaving
 
+  if (!mounted || !isAllowed) {
+    return (
+      <div className="min-h-screen bg-zinc-50 text-zinc-900">
+        <AppHeader title="Manager" subtitle="Kitchen hours" />
+        <div className="mx-auto max-w-5xl px-4 py-10 text-sm text-zinc-600">Checking access…</div>
+      </div>
+    )
+  }
+
   return (
-    <div style={{ padding: 16, fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif' }}>
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      <AppHeader title="Manager" subtitle="Kitchen hours" />
+      <main className="mx-auto max-w-5xl px-4 py-6">
+        <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
       <h2 style={{ margin: 0, marginBottom: 12 }}>Manager · Kitchen hours</h2>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
@@ -438,6 +467,8 @@ export default function ManagerKitchenHoursPage() {
           )}
         </div>
       ) : null}
+        </div>
+      </main>
     </div>
   )
 }
