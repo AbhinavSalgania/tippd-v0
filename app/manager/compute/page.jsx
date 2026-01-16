@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { calculateServicePeriodPayouts } from '@/lib/lib/tipCalculator'
 import AppHeader from '@/app/components/AppHeader'
@@ -43,11 +43,16 @@ function normalizeLineItems(lineItems) {
 
 export default function ManagerComputePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const preselectId = searchParams.get('servicePeriodId')
   const [mounted, setMounted] = useState(false)
   const [isAllowed, setIsAllowed] = useState(false)
 
   const [servicePeriods, setServicePeriods] = useState([])
   const [selectedServicePeriodId, setSelectedServicePeriodId] = useState('')
+
+  const [totalsStatus, setTotalsStatus] = useState('unknown') // 'unknown' | 'checking' | 'set' | 'missing'
+  const [totalsError, setTotalsError] = useState(null)
 
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(false)
   const [isComputing, setIsComputing] = useState(false)
@@ -83,13 +88,16 @@ export default function ManagerComputePage() {
 
       const periods = Array.isArray(data) ? data : []
       setServicePeriods(periods)
-      setSelectedServicePeriodId((prev) => prev || periods[0]?.id || '')
+      setSelectedServicePeriodId((prev) => {
+        if (preselectId && periods.some((p) => p.id === preselectId)) return preselectId
+        return prev || periods[0]?.id || ''
+      })
     } catch (e) {
       setLoadError(e?.message || String(e))
     } finally {
       setIsLoadingPeriods(false)
     }
-  }, [])
+  }, [preselectId])
 
   useEffect(() => {
     setMounted(true)
@@ -104,6 +112,40 @@ export default function ManagerComputePage() {
     if (!mounted || !isAllowed) return
     loadPeriods()
   }, [loadPeriods, mounted, isAllowed])
+
+  // Totals guard: block compute if totals row missing.
+  useEffect(() => {
+    if (!mounted || !isAllowed) return
+    const servicePeriodId = selectedServicePeriodId
+    if (!servicePeriodId) {
+      setTotalsStatus('unknown')
+      setTotalsError(null)
+      return
+    }
+
+    let isCancelled = false
+    ;(async () => {
+      setTotalsStatus('checking')
+      setTotalsError(null)
+      const res = await supabase
+        .from('service_period_totals')
+        .select('service_period_id')
+        .eq('service_period_id', servicePeriodId)
+        .maybeSingle()
+
+      if (isCancelled) return
+      if (res.error) {
+        setTotalsError(res.error.message || String(res.error))
+        setTotalsStatus('unknown')
+        return
+      }
+      setTotalsStatus(res.data?.service_period_id ? 'set' : 'missing')
+    })()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [mounted, isAllowed, selectedServicePeriodId])
 
   const computeAndPersist = useCallback(async () => {
     setComputeError(null)
@@ -305,6 +347,30 @@ export default function ManagerComputePage() {
         <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
       <h2 style={{ margin: 0, marginBottom: 12 }}>Manager · Compute payouts</h2>
 
+      {totalsStatus === 'missing' ? (
+        <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <div className="font-medium">Totals not set.</div>
+          <div className="mt-1">Go to Entries to set bartender/kitchen pools.</div>
+          <a
+            className="mt-2 inline-block rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200 hover:bg-amber-50"
+            href={
+              selectedPeriod?.period_date && selectedPeriod?.period_type
+                ? `/manager/entries?date=${encodeURIComponent(selectedPeriod.period_date)}&type=${encodeURIComponent(
+                    selectedPeriod.period_type
+                  )}`
+                : '/manager/entries'
+            }
+          >
+            Go to Entries
+          </a>
+        </div>
+      ) : totalsError ? (
+        <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <div className="font-medium">Totals check failed.</div>
+          <div className="mt-1">{totalsError}</div>
+        </div>
+      ) : null}
+
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
         <label>
           <span style={{ marginRight: 8 }}>Service period</span>
@@ -326,7 +392,10 @@ export default function ManagerComputePage() {
           {isLoadingPeriods ? 'Loading…' : 'Reload'}
         </button>
 
-        <button onClick={computeAndPersist} disabled={isComputing || !selectedServicePeriodId}>
+        <button
+          onClick={computeAndPersist}
+          disabled={isComputing || !selectedServicePeriodId || totalsStatus === 'missing' || totalsStatus === 'checking'}
+        >
           {isComputing ? 'Computing…' : 'Compute payouts'}
         </button>
       </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import AppHeader from '@/app/components/AppHeader'
 import { requireManager } from '@/app/lib/requireRole'
@@ -24,6 +24,7 @@ function roleSortKey(role) {
 
 export default function ManagerEntriesPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [mounted, setMounted] = useState(false)
   const [isAllowed, setIsAllowed] = useState(false)
@@ -65,6 +66,15 @@ export default function ManagerEntriesPage() {
     if (!mounted) return
     setIsAllowed(requireManager(router))
   }, [mounted, router])
+
+  // Prefill date/type from query params (optional UX).
+  useEffect(() => {
+    if (!mounted) return
+    const qDate = searchParams.get('date')
+    const qType = searchParams.get('type')
+    if (qDate && !periodDate) setPeriodDate(qDate)
+    if ((qType === 'lunch' || qType === 'dinner') && qType !== periodType) setPeriodType(qType)
+  }, [mounted, searchParams, periodDate, periodType])
 
   const isBusy =
     isLoadingEmployees || isLoadingPeriod || isLoadingEntries || isSaving || isLoadingTotals || isSavingTotals
@@ -365,14 +375,14 @@ export default function ManagerEntriesPage() {
         )
 
       if (upsertRes.error) throw upsertRes.error
-      setTotalsStatus('set')
+      await loadTotalsForPeriod(servicePeriodId)
       setTotalsSuccess('Saved totals.')
     } catch (e) {
       setTotalsError(e?.message || String(e))
     } finally {
       setIsSavingTotals(false)
     }
-  }, [activePeriod?.id, totalsInputs])
+  }, [activePeriod?.id, totalsInputs, loadTotalsForPeriod])
 
   const saveEntries = useCallback(async () => {
     setSaveError(null)
@@ -676,7 +686,7 @@ export default function ManagerEntriesPage() {
                 Save totals (if not done) then Compute payouts.
               </div>
               <button
-                onClick={() => router.push('/manager/compute')}
+                onClick={() => router.push(`/manager/compute?servicePeriodId=${activePeriod.id}`)}
                 className="mt-3 rounded-md bg-white px-3 py-2 text-xs font-medium text-zinc-700 ring-1 ring-inset ring-zinc-200 hover:bg-zinc-50"
               >
                 Go to Compute payouts
