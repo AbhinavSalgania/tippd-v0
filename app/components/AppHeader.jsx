@@ -29,6 +29,7 @@ export default function AppHeader({ title, subtitle }) {
     if (!isManager) return [{ href: '/dashboard', label: 'Dashboard' }]
     return [
       { href: '/dashboard', label: 'Dashboard' },
+      { href: '/manager/entries', label: 'Entries' },
       { href: '/manager/compute', label: 'Compute' },
       { href: '/manager/kitchen-hours', label: 'Kitchen hours' },
       { href: '/manager/kitchen-weekly', label: 'Kitchen weekly' },
