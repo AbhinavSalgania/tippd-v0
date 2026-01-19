@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { calculateWeeklyKitchenPayouts } from '@/lib/lib/tipCalculator'
+import { calculateWeeklyKitchenPayouts } from '@/lib/tipCalculator'
 import AppHeader from '@/app/components/AppHeader'
 import { requireManager } from '@/app/lib/requireRole'
 
