@@ -1,4 +1,4 @@
--- Tippd v2 schema migration (aligns to lib/lib/tipCalculator.js)
+-- Tippd v2 schema migration (aligns to lib/tipCalculator.js)
 -- - Preserves existing tables by renaming to *_old when safe
 -- - Creates new v2 tables for service-period pooling + weekly kitchen allocation
 -- - No triggers: all calculations happen in JS
