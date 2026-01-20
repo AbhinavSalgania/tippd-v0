@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import AppHeader from '@/app/components/AppHeader'
-import { requireManager } from '@/app/lib/requireRole'
+import { requireKitchenManager } from '@/app/lib/requireRole'
 
 function formatPeriodLabel(p) {
   const date = p?.period_date ?? ''
@@ -161,7 +161,7 @@ export default function ManagerKitchenHoursPage() {
 
   useEffect(() => {
     if (!mounted) return
-    setIsAllowed(requireManager(router))
+    setIsAllowed(requireKitchenManager(router))
   }, [mounted, router])
 
   useEffect(() => {

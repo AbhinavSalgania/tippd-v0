@@ -22,20 +22,34 @@ export default function AppHeader({ title, subtitle }) {
   }, [mounted])
 
   const role = session?.role || ''
-  const isManager = role === 'kitchen_manager'
 
   const links = useMemo(() => {
     if (!session) return []
-    if (!isManager) return [{ href: '/dashboard', label: 'Dashboard' }]
-    return [
-      { href: '/dashboard', label: 'Dashboard' },
-      { href: '/manager/entries', label: 'Entries' },
-      { href: '/manager/compute', label: 'Compute' },
-      { href: '/manager/kitchen-hours', label: 'Kitchen hours' },
-      { href: '/manager/kitchen-weekly', label: 'Kitchen weekly' },
-      { href: '/manager/summary', label: 'Summary' }
-    ]
-  }, [session, isManager])
+
+    // Full admin (manager): all routes
+    if (role === 'manager') {
+      return [
+        { href: '/dashboard', label: 'Dashboard' },
+        { href: '/manager/entries', label: 'Entries' },
+        { href: '/manager/compute', label: 'Compute' },
+        { href: '/manager/kitchen-hours', label: 'Kitchen hours' },
+        { href: '/manager/kitchen-weekly', label: 'Kitchen weekly' },
+        { href: '/manager/summary', label: 'Summary' }
+      ]
+    }
+
+    // Kitchen manager: BOH-only routes
+    if (role === 'kitchen_manager') {
+      return [
+        { href: '/dashboard', label: 'Dashboard' },
+        { href: '/manager/kitchen-hours', label: 'Kitchen hours' },
+        { href: '/manager/kitchen-weekly', label: 'Kitchen weekly' }
+      ]
+    }
+
+    // Server / bartender / other: dashboard only
+    return [{ href: '/dashboard', label: 'Dashboard' }]
+  }, [session, role])
 
   const employeeLabel = useMemo(() => {
     if (!session) return ''
