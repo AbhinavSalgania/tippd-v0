@@ -177,6 +177,14 @@ with
     where worked_role = 'bartender'
     group by service_period_id
   ),
+  bartender_slots as (
+    select
+      service_period_id,
+      employee_id,
+      row_number() over (partition by service_period_id order by employee_id) as bartender_slot_rank
+    from public.shift_assignments
+    where worked_role = 'bartender'
+  ),
   seeded as (
     select
       foh_assignments.*,
@@ -243,7 +251,7 @@ with
       tip_calc.service_period_id,
       tip_calc.employee_id,
       tip_calc.worked_role as role,
-      round(tip_calc.sales_dollars * 100)::int as sales_total_cents,
+      round(tip_calc.sales_dollars, 2)::numeric as sales_total,
       greatest(
         0.17,
         least(0.23, tip_calc.base_tip_pct + tip_calc.sales_tip_adj + tip_calc.noise_tip_adj)
@@ -254,19 +262,30 @@ insert into public.service_period_entries (
   service_period_id,
   employee_id,
   role,
-  sales_total_cents,
-  tips_collected_cents,
+  sales_total,
+  tips_collected,
   bartender_slot
 )
 select
   final_entries.service_period_id,
   final_entries.employee_id,
   final_entries.role,
-  final_entries.sales_total_cents,
-  round(final_entries.sales_total_cents * final_entries.tip_pct)::int as tips_collected_cents,
-  case when coalesce(bartender_counts.bartender_count, 0) >= 2 then 2 else 1 end as bartender_slot
+  final_entries.sales_total,
+  round(final_entries.sales_total * final_entries.tip_pct, 2)::numeric as tips_collected,
+  case
+    when final_entries.role = 'bartender'
+      then case
+        when coalesce(bartender_counts.bartender_count, 0) >= 2
+          then bartender_slots.bartender_slot_rank
+        else 1
+      end
+    else null
+  end as bartender_slot
 from final_entries
-left join bartender_counts using (service_period_id);
+left join bartender_counts using (service_period_id)
+left join bartender_slots
+  on bartender_slots.service_period_id = final_entries.service_period_id
+  and bartender_slots.employee_id = final_entries.employee_id;
 
 commit;
 
