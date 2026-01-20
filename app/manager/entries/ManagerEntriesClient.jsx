@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { calculateServicePeriodPayouts } from '@/lib/tipCalculator'
 import AppHeader from '@/app/components/AppHeader'
 import { requireManager } from '@/app/lib/requireRole'
 
@@ -22,6 +23,46 @@ function roleSortKey(role) {
   return role === 'bartender' ? '0' : role === 'server' ? '1' : `9-${String(role || '')}`
 }
 
+/**
+ * Parse dollar amount from a line item description string.
+ * Handles formats like: "$55.00", "-$55.00", "+$55.00"
+ */
+function parseAmountFromDescription(description) {
+  if (typeof description !== 'string') return null
+  const match = description.match(/([+-]?)\$(\d+(?:\.\d{1,2})?)/)
+  if (!match) return null
+  const sign = match[1]
+  const value = parseFloat(match[2])
+  if (!Number.isFinite(value)) return null
+  if (sign === '-') return -value
+  return value
+}
+
+function normalizeLineItems(lineItems) {
+  if (!Array.isArray(lineItems)) return []
+  return lineItems.map((li, idx) => {
+    if (typeof li === 'string') {
+      const parsedAmount = parseAmountFromDescription(li)
+      return { sort_order: idx, description: li, amount: parsedAmount }
+    }
+    if (li && typeof li === 'object') {
+      const description =
+        typeof li.description === 'string'
+          ? li.description
+          : li.description == null
+            ? JSON.stringify(li)
+            : String(li.description)
+      let amount = li.amount == null ? null : Number(li.amount)
+      if (!Number.isFinite(amount)) {
+        amount = parseAmountFromDescription(description)
+      }
+      return { sort_order: idx, description, amount }
+    }
+    const strLi = String(li)
+    return { sort_order: idx, description: strLi, amount: parseAmountFromDescription(strLi) }
+  })
+}
+
 export default function ManagerEntriesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -35,14 +76,6 @@ export default function ManagerEntriesPage() {
 
   const [fohEmployees, setFohEmployees] = useState([])
 
-  // Totals inputs for the selected service period.
-  const [totalsInputs, setTotalsInputs] = useState({ bartender_pool_total: '', kitchen_pool_total: '' })
-  const [totalsStatus, setTotalsStatus] = useState('unknown') // 'unknown' | 'set' | 'missing'
-  const [isLoadingTotals, setIsLoadingTotals] = useState(false)
-  const [isSavingTotals, setIsSavingTotals] = useState(false)
-  const [totalsError, setTotalsError] = useState(null)
-  const [totalsSuccess, setTotalsSuccess] = useState(null)
-
   // inputsByEmployeeId:
   // { [employeeId]: { sales_total: string, tips_collected: string, bartender_slot: string } }
   const [inputsByEmployeeId, setInputsByEmployeeId] = useState({})
@@ -53,10 +86,13 @@ export default function ManagerEntriesPage() {
   const [isLoadingPeriod, setIsLoadingPeriod] = useState(false)
   const [isLoadingEntries, setIsLoadingEntries] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
 
   const [loadError, setLoadError] = useState(null)
   const [saveError, setSaveError] = useState(null)
   const [saveSuccess, setSaveSuccess] = useState(null)
+  const [publishError, setPublishError] = useState(null)
+  const [publishSuccess, setPublishSuccess] = useState(null)
 
   useEffect(() => {
     setMounted(true)
@@ -77,11 +113,7 @@ export default function ManagerEntriesPage() {
   }, [mounted, searchParams, periodDate, periodType])
 
   const isBusy =
-    isLoadingEmployees || isLoadingPeriod || isLoadingEntries || isSaving || isLoadingTotals || isSavingTotals
-
-  const setTotalsInput = useCallback((patch) => {
-    setTotalsInputs((prev) => ({ ...prev, ...patch }))
-  }, [])
+    isLoadingEmployees || isLoadingPeriod || isLoadingEntries || isSaving || isPublishing
 
   const setEmployeeInput = useCallback((employeeId, patch) => {
     setInputsByEmployeeId((prev) => ({
@@ -129,38 +161,6 @@ export default function ManagerEntriesPage() {
       setFohEmployees([])
     } finally {
       setIsLoadingEmployees(false)
-    }
-  }, [])
-
-  const loadTotalsForPeriod = useCallback(async (servicePeriodId) => {
-    setIsLoadingTotals(true)
-    setTotalsError(null)
-    setTotalsSuccess(null)
-    try {
-      const res = await supabase
-        .from('service_period_totals')
-        .select('service_period_id, bartender_pool_total, kitchen_pool_total')
-        .eq('service_period_id', servicePeriodId)
-        .maybeSingle()
-
-      if (res.error) throw res.error
-
-      if (!res.data) {
-        setTotalsStatus('missing')
-        setTotalsInputs({ bartender_pool_total: '', kitchen_pool_total: '' })
-        return
-      }
-
-      setTotalsStatus('set')
-      setTotalsInputs({
-        bartender_pool_total: res.data.bartender_pool_total != null ? String(res.data.bartender_pool_total) : '0',
-        kitchen_pool_total: res.data.kitchen_pool_total != null ? String(res.data.kitchen_pool_total) : '0'
-      })
-    } catch (e) {
-      setTotalsError(e?.message || String(e))
-      setTotalsStatus('unknown')
-    } finally {
-      setIsLoadingTotals(false)
     }
   }, [])
 
@@ -275,25 +275,14 @@ export default function ManagerEntriesPage() {
     loadEntriesForPeriod(activePeriod.id)
   }, [mounted, isAllowed, activePeriod?.id, fohEmployees, loadEntriesForPeriod])
 
-  useEffect(() => {
-    if (!mounted || !isAllowed) return
-    if (!activePeriod?.id) {
-      setTotalsStatus('unknown')
-      setTotalsInputs({ bartender_pool_total: '', kitchen_pool_total: '' })
-      return
-    }
-    loadTotalsForPeriod(activePeriod.id)
-  }, [mounted, isAllowed, activePeriod?.id, loadTotalsForPeriod])
-
   const loadOrCreatePeriod = useCallback(async () => {
     setLoadError(null)
     setSaveError(null)
     setSaveSuccess(null)
-    setTotalsError(null)
-    setTotalsSuccess(null)
+    setPublishError(null)
+    setPublishSuccess(null)
     setActivePeriod(null)
     setStoredEntries([])
-    setTotalsStatus('unknown')
 
     const d = periodDate
     const t = periodType
@@ -339,54 +328,11 @@ export default function ManagerEntriesPage() {
     }
   }, [periodDate, periodType])
 
-  const saveTotals = useCallback(async () => {
-    setTotalsError(null)
-    setTotalsSuccess(null)
-
-    const servicePeriodId = activePeriod?.id
-    if (!servicePeriodId) {
-      setTotalsError('Load or create a service period first.')
-      return
-    }
-
-    const bartenderRaw = String(totalsInputs.bartender_pool_total ?? '').trim()
-    const kitchenRaw = String(totalsInputs.kitchen_pool_total ?? '').trim()
-    if (bartenderRaw === '' || kitchenRaw === '') {
-      setTotalsError('Enter both bartender_pool_total and kitchen_pool_total.')
-      return
-    }
-
-    setIsSavingTotals(true)
-    try {
-      const bartenderPoolTotal = asNumber(bartenderRaw, 'bartender_pool_total')
-      const kitchenPoolTotal = asNumber(kitchenRaw, 'kitchen_pool_total')
-      if (bartenderPoolTotal < 0) throw new Error('bartender_pool_total must be >= 0.')
-      if (kitchenPoolTotal < 0) throw new Error('kitchen_pool_total must be >= 0.')
-
-      const upsertRes = await supabase
-        .from('service_period_totals')
-        .upsert(
-          {
-            service_period_id: servicePeriodId,
-            bartender_pool_total: bartenderPoolTotal,
-            kitchen_pool_total: kitchenPoolTotal
-          },
-          { onConflict: 'service_period_id' }
-        )
-
-      if (upsertRes.error) throw upsertRes.error
-      await loadTotalsForPeriod(servicePeriodId)
-      setTotalsSuccess('Saved totals.')
-    } catch (e) {
-      setTotalsError(e?.message || String(e))
-    } finally {
-      setIsSavingTotals(false)
-    }
-  }, [activePeriod?.id, totalsInputs, loadTotalsForPeriod])
-
   const saveEntries = useCallback(async () => {
     setSaveError(null)
     setSaveSuccess(null)
+    setPublishError(null)
+    setPublishSuccess(null)
 
     const servicePeriodId = activePeriod?.id
     if (!servicePeriodId) {
@@ -470,6 +416,292 @@ export default function ManagerEntriesPage() {
     }
   }, [activePeriod?.id, fohEmployees, inputsByEmployeeId, loadEntriesForPeriod])
 
+  /**
+   * Validate bartender slots:
+   * - Each bartender must have slot 1 or 2
+   * - No duplicate slots
+   * - Cannot have slot 2 without slot 1
+   */
+  const validateBartenderSlots = useCallback((upserts) => {
+    const bartenders = upserts.filter((u) => u.role === 'bartender')
+    if (bartenders.length === 0) {
+      return { valid: false, error: 'At least one bartender is required.' }
+    }
+
+    const slots = bartenders.map((b) => b.bartender_slot)
+    const slot1Count = slots.filter((s) => s === 1).length
+    const slot2Count = slots.filter((s) => s === 2).length
+
+    // Check for duplicates
+    if (slot1Count > 1) {
+      return { valid: false, error: 'Multiple bartenders have slot 1. Only one bartender can be slot 1.' }
+    }
+    if (slot2Count > 1) {
+      return { valid: false, error: 'Multiple bartenders have slot 2. Only one bartender can be slot 2.' }
+    }
+
+    // Check slot 2 without slot 1
+    if (slot2Count > 0 && slot1Count === 0) {
+      return { valid: false, error: 'Cannot have bartender slot 2 without a bartender in slot 1.' }
+    }
+
+    // Ensure every bartender has a valid slot
+    for (const b of bartenders) {
+      if (b.bartender_slot !== 1 && b.bartender_slot !== 2) {
+        return { valid: false, error: `Bartender must have slot 1 or 2.` }
+      }
+    }
+
+    return { valid: true, error: null }
+  }, [])
+
+  /**
+   * Compute & Publish: saves entries first (if needed), then computes payouts and persists them.
+   * Employees can see results on /dashboard immediately after.
+   */
+  const computeAndPublish = useCallback(async () => {
+    setPublishError(null)
+    setPublishSuccess(null)
+    setSaveError(null)
+    setSaveSuccess(null)
+
+    const servicePeriodId = activePeriod?.id
+    if (!servicePeriodId) {
+      setPublishError('Load or create a service period first.')
+      return
+    }
+
+    setIsPublishing(true)
+    try {
+      // 1) Build upserts from current inputs (same logic as saveEntries)
+      const upserts = []
+
+      for (const emp of fohEmployees || []) {
+        const row = inputsByEmployeeId?.[emp.id] || { sales_total: '', tips_collected: '', bartender_slot: '' }
+        const salesRaw = String(row.sales_total ?? '').trim()
+        const tipsRaw = String(row.tips_collected ?? '').trim()
+        const slotRaw = String(row.bartender_slot ?? '').trim()
+
+        const hasAny = salesRaw !== '' || tipsRaw !== '' || slotRaw !== ''
+        if (!hasAny) continue
+
+        if (salesRaw === '' || tipsRaw === '') {
+          throw new Error(`Enter both sales_total and tips_collected for ${emp.employee_code}.`)
+        }
+
+        const sales = asNumber(salesRaw, `sales_total for employee_id=${emp.id}`)
+        const tips = asNumber(tipsRaw, `tips_collected for employee_id=${emp.id}`)
+
+        if (sales < 0) throw new Error(`sales_total must be >= 0 for ${emp.employee_code}.`)
+        if (tips < 0) throw new Error(`tips_collected must be >= 0 for ${emp.employee_code}.`)
+
+        let bartenderSlot = null
+        if (emp.role === 'bartender') {
+          if (slotRaw === '') {
+            throw new Error(`Bartender slot is required for bartender ${emp.employee_code} (use 1 or 2).`)
+          }
+          const parsed = Number(slotRaw)
+          if (!Number.isInteger(parsed) || (parsed !== 1 && parsed !== 2)) {
+            throw new Error(`bartender_slot must be 1 or 2 for bartender ${emp.employee_code}.`)
+          }
+          bartenderSlot = parsed
+        } else {
+          bartenderSlot = null
+        }
+
+        upserts.push({
+          service_period_id: servicePeriodId,
+          employee_id: emp.id,
+          role: emp.role,
+          sales_total: sales,
+          tips_collected: tips,
+          bartender_slot: bartenderSlot
+        })
+      }
+
+      if (upserts.length === 0) {
+        setPublishError('Enter at least one row before computing.')
+        return
+      }
+
+      // 2) Validate bartender slots
+      const slotValidation = validateBartenderSlots(upserts)
+      if (!slotValidation.valid) {
+        setPublishError(slotValidation.error)
+        return
+      }
+
+      // 3) Save entries first
+      const upsertRes = await supabase
+        .from('service_period_entries')
+        .upsert(upserts, { onConflict: 'service_period_id,employee_id' })
+
+      if (upsertRes.error) {
+        const msg = upsertRes.error.message || String(upsertRes.error)
+        if (msg.toLowerCase().includes('no unique or exclusion constraint')) {
+          throw new Error(
+            "Upsert failed because the DB is missing a UNIQUE constraint on (service_period_id, employee_id). Add that constraint (or matching unique index) and retry."
+          )
+        }
+        throw upsertRes.error
+      }
+
+      // 4) Fetch entries back with employee info for compute
+      /** @type {Array<any>} */
+      let entries = []
+      /** @type {Record<string, { employee_code?: string, display_name?: string }>} */
+      let employeeById = {}
+
+      const relRes = await supabase
+        .from('service_period_entries')
+        .select(
+          'id, service_period_id, employee_id, role, sales_total, tips_collected, bartender_slot, employees ( employee_code, display_name )'
+        )
+        .eq('service_period_id', servicePeriodId)
+        .order('role', { ascending: true })
+        .order('employee_id', { ascending: true })
+
+      if (!relRes.error) {
+        entries = Array.isArray(relRes.data) ? relRes.data : []
+        for (const r of entries) {
+          const emp = r?.employees
+          if (emp && r?.employee_id) {
+            employeeById[r.employee_id] = {
+              employee_code: emp.employee_code ?? '',
+              display_name: emp.display_name ?? ''
+            }
+          }
+        }
+      } else {
+        // Fallback: entries -> employees lookup
+        const entRes = await supabase
+          .from('service_period_entries')
+          .select('id, service_period_id, employee_id, role, sales_total, tips_collected, bartender_slot')
+          .eq('service_period_id', servicePeriodId)
+          .order('role', { ascending: true })
+          .order('employee_id', { ascending: true })
+
+        if (entRes.error) throw entRes.error
+        entries = Array.isArray(entRes.data) ? entRes.data : []
+
+        const employeeIds = Array.from(new Set(entries.map((e) => e.employee_id).filter(Boolean)))
+        if (employeeIds.length > 0) {
+          const empRes = await supabase
+            .from('employees')
+            .select('id, employee_code, display_name')
+            .in('id', employeeIds)
+
+          if (empRes.error) throw empRes.error
+          for (const emp of empRes.data || []) {
+            employeeById[emp.id] = { employee_code: emp.employee_code ?? '', display_name: emp.display_name ?? '' }
+          }
+        }
+      }
+
+      if (entries.length === 0) {
+        setPublishError('No entries found after save. Please try again.')
+        return
+      }
+
+      // 5) Build engine input workers[]
+      const workers = entries.map((r) => {
+        const employeeId = r.employee_id
+        return {
+          employeeId,
+          role: r.role,
+          sales: asNumber(r.sales_total, `sales_total for employee_id=${employeeId}`),
+          tipsCollected: asNumber(r.tips_collected, `tips_collected for employee_id=${employeeId}`)
+        }
+      })
+
+      // 6) Compute payouts
+      const engine = calculateServicePeriodPayouts({
+        servicePeriodId,
+        workers
+      })
+
+      if (engine?.hasError) {
+        setPublishError(engine.errorMessage || 'Tip engine returned an error.')
+        return
+      }
+
+      // 7) Persist derived totals
+      {
+        const { error } = await supabase
+          .from('service_period_totals')
+          .upsert(
+            {
+              service_period_id: servicePeriodId,
+              bartender_pool_total: engine.bartenderPoolTotal,
+              kitchen_pool_total: engine.kitchenPoolTotal
+            },
+            { onConflict: 'service_period_id' }
+          )
+        if (error) throw error
+      }
+
+      // 8) Persist payouts (upsert, get back IDs)
+      const payoutUpserts = (engine.payoutsByWorker || []).map((p) => ({
+        service_period_id: servicePeriodId,
+        employee_id: p.employeeId,
+        role: p.role,
+        kitchen_contribution: p.kitchenContribution,
+        bartender_contribution: p.bartenderContribution,
+        bartender_share_received: p.bartenderShareReceived,
+        net_tips: p.netTips,
+        amount_owed_to_house: p.amountOwedToHouse
+      }))
+
+      const payoutRes = await supabase
+        .from('service_period_payouts')
+        .upsert(payoutUpserts, { onConflict: 'service_period_id,employee_id' })
+        .select('id, employee_id')
+
+      if (payoutRes.error) throw payoutRes.error
+      const payoutRows = Array.isArray(payoutRes.data) ? payoutRes.data : []
+
+      /** @type {Record<string, string>} */
+      const payoutIdByEmployeeId = {}
+      for (const row of payoutRows) {
+        if (row?.employee_id && row?.id) payoutIdByEmployeeId[row.employee_id] = row.id
+      }
+
+      // 9) Replace payout_line_items for each payout (delete then insert)
+      const payoutsByWorker = Array.isArray(engine.payoutsByWorker) ? engine.payoutsByWorker : []
+      await Promise.all(
+        payoutsByWorker.map(async (p) => {
+          const payoutId = payoutIdByEmployeeId[p.employeeId]
+          if (!payoutId) {
+            throw new Error(`Missing payout row id after upsert for employee_id=${p.employeeId}`)
+          }
+
+          const delRes = await supabase.from('payout_line_items').delete().eq('service_period_payout_id', payoutId)
+          if (delRes.error) throw delRes.error
+
+          const normalized = normalizeLineItems(p.lineItems).map((li) => ({
+            service_period_payout_id: payoutId,
+            sort_order: li.sort_order,
+            description: li.description,
+            amount: li.amount
+          }))
+
+          if (normalized.length > 0) {
+            const insRes = await supabase.from('payout_line_items').insert(normalized)
+            if (insRes.error) throw insRes.error
+          }
+        })
+      )
+
+      // 10) Success - reload stored entries preview
+      await loadEntriesForPeriod(servicePeriodId)
+      setPublishSuccess('Computed & published. Employees can now see payouts on /dashboard.')
+    } catch (e) {
+      setPublishError(e?.message || String(e))
+    } finally {
+      setIsPublishing(false)
+    }
+  }, [activePeriod?.id, fohEmployees, inputsByEmployeeId, validateBartenderSlots, loadEntriesForPeriod])
+
   const previewRows = useMemo(() => {
     const entries = Array.isArray(storedEntries) ? storedEntries : []
     return entries.map((e) => {
@@ -545,25 +777,8 @@ export default function ManagerEntriesPage() {
           </div>
 
           {activePeriod ? (
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-xs text-zinc-500">
-                Selected service_period_id: <span className="font-mono">{activePeriod.id}</span>
-              </div>
-              <div className="text-xs">
-                {totalsStatus === 'set' ? (
-                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-emerald-700">
-                    Totals: set
-                  </span>
-                ) : totalsStatus === 'missing' ? (
-                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-amber-700">
-                    Totals: missing
-                  </span>
-                ) : (
-                  <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-zinc-600">
-                    Totals: —
-                  </span>
-                )}
-              </div>
+            <div className="mt-3 text-xs text-zinc-500">
+              Selected service_period_id: <span className="font-mono">{activePeriod.id}</span>
             </div>
           ) : (
             <div className="mt-3 text-xs text-zinc-500">No service period selected.</div>
@@ -575,67 +790,6 @@ export default function ManagerEntriesPage() {
             </div>
           ) : null}
         </div>
-
-        {activePeriod?.id ? (
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-semibold">Totals</div>
-                <div className="mt-1 text-xs text-zinc-500">Set bartender + kitchen pool totals for this service period.</div>
-              </div>
-              <button
-                onClick={saveTotals}
-                disabled={isBusy}
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSavingTotals ? 'Saving…' : 'Save totals'}
-              </button>
-            </div>
-
-            {isLoadingTotals ? <div className="mt-4 text-sm text-zinc-600">Loading totals…</div> : null}
-
-            {totalsError ? (
-              <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {totalsError}
-              </div>
-            ) : null}
-            {totalsSuccess ? (
-              <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                {totalsSuccess}
-              </div>
-            ) : null}
-
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <label className="text-xs text-zinc-600">
-                <div className="mb-1">bartender_pool_total</div>
-                <input
-                  type="number"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={totalsInputs.bartender_pool_total}
-                  onChange={(e) => setTotalsInput({ bartender_pool_total: e.target.value })}
-                  disabled={isBusy}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-right focus:border-zinc-900 focus:outline-none"
-                  placeholder="0.00"
-                />
-              </label>
-
-              <label className="text-xs text-zinc-600">
-                <div className="mb-1">kitchen_pool_total</div>
-                <input
-                  type="number"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={totalsInputs.kitchen_pool_total}
-                  onChange={(e) => setTotalsInput({ kitchen_pool_total: e.target.value })}
-                  disabled={isBusy}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-right focus:border-zinc-900 focus:outline-none"
-                  placeholder="0.00"
-                />
-              </label>
-            </div>
-          </div>
-        ) : null}
 
         <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
@@ -657,9 +811,16 @@ export default function ManagerEntriesPage() {
               <button
                 onClick={saveEntries}
                 disabled={isBusy || !activePeriod?.id}
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSaving ? 'Saving…' : 'Save entries'}
+              </button>
+              <button
+                onClick={computeAndPublish}
+                disabled={isBusy || !activePeriod?.id}
+                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isPublishing ? 'Publishing…' : 'Compute & Publish'}
               </button>
             </div>
           </div>
@@ -675,16 +836,28 @@ export default function ManagerEntriesPage() {
             </div>
           ) : null}
 
-          {saveSuccess && activePeriod?.id ? (
-            <div className="mt-3 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
-              <div className="font-medium">Next:</div>
-              <div className="mt-1">Save totals (if not done) then Compute payouts.</div>
-              <button
-                onClick={() => router.push(`/manager/compute?servicePeriodId=${activePeriod.id}`)}
-                className="mt-3 rounded-md bg-white px-3 py-2 text-xs font-medium text-zinc-700 ring-1 ring-inset ring-zinc-200 hover:bg-zinc-50"
-              >
-                Go to Compute payouts
-              </button>
+          {publishError ? (
+            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {publishError}
+            </div>
+          ) : null}
+          {publishSuccess ? (
+            <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              <div className="font-medium">{publishSuccess}</div>
+              <div className="mt-2 flex gap-2">
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200 hover:bg-emerald-50"
+                >
+                  View /dashboard
+                </button>
+                <button
+                  onClick={() => router.push('/manager/summary')}
+                  className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 ring-1 ring-inset ring-zinc-200 hover:bg-zinc-50"
+                >
+                  View Summary
+                </button>
+              </div>
             </div>
           ) : null}
 

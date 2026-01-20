@@ -80,8 +80,8 @@ export default function ManagerComputePage() {
   const [servicePeriods, setServicePeriods] = useState([])
   const [selectedServicePeriodId, setSelectedServicePeriodId] = useState('')
 
-  const [totalsStatus, setTotalsStatus] = useState('unknown') // 'unknown' | 'checking' | 'set' | 'missing'
-  const [totalsError, setTotalsError] = useState(null)
+  const [entriesStatus, setEntriesStatus] = useState('unknown') // 'unknown' | 'checking' | 'found' | 'missing'
+  const [entriesCount, setEntriesCount] = useState(0)
 
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(false)
   const [isComputing, setIsComputing] = useState(false)
@@ -142,33 +142,33 @@ export default function ManagerComputePage() {
     loadPeriods()
   }, [loadPeriods, mounted, isAllowed])
 
-  // Totals guard: block compute if totals row missing.
+  // Entries guard: check if entries exist for the selected period.
   useEffect(() => {
     if (!mounted || !isAllowed) return
     const servicePeriodId = selectedServicePeriodId
     if (!servicePeriodId) {
-      setTotalsStatus('unknown')
-      setTotalsError(null)
+      setEntriesStatus('unknown')
+      setEntriesCount(0)
       return
     }
 
     let isCancelled = false
     ;(async () => {
-      setTotalsStatus('checking')
-      setTotalsError(null)
+      setEntriesStatus('checking')
       const res = await supabase
-        .from('service_period_totals')
-        .select('service_period_id')
+        .from('service_period_entries')
+        .select('id', { count: 'exact', head: true })
         .eq('service_period_id', servicePeriodId)
-        .maybeSingle()
 
       if (isCancelled) return
       if (res.error) {
-        setTotalsError(res.error.message || String(res.error))
-        setTotalsStatus('unknown')
+        setEntriesStatus('unknown')
+        setEntriesCount(0)
         return
       }
-      setTotalsStatus(res.data?.service_period_id ? 'set' : 'missing')
+      const count = res.count ?? 0
+      setEntriesCount(count)
+      setEntriesStatus(count > 0 ? 'found' : 'missing')
     })()
 
     return () => {
@@ -376,10 +376,10 @@ export default function ManagerComputePage() {
         <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
           <h2 style={{ margin: 0, marginBottom: 12 }}>Manager · Compute payouts</h2>
 
-          {totalsStatus === 'missing' ? (
+          {entriesStatus === 'missing' ? (
             <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              <div className="font-medium">Totals not set.</div>
-              <div className="mt-1">Go to Entries to set bartender/kitchen pools.</div>
+              <div className="font-medium">No entries found for this period.</div>
+              <div className="mt-1">Go to Entries to add FOH entries before computing payouts.</div>
               <a
                 className="mt-2 inline-block rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200 hover:bg-amber-50"
                 href={
@@ -393,10 +393,9 @@ export default function ManagerComputePage() {
                 Go to Entries
               </a>
             </div>
-          ) : totalsError ? (
-            <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              <div className="font-medium">Totals check failed.</div>
-              <div className="mt-1">{totalsError}</div>
+          ) : entriesStatus === 'found' ? (
+            <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              {entriesCount} {entriesCount === 1 ? 'entry' : 'entries'} found. Ready to compute.
             </div>
           ) : null}
 
@@ -426,8 +425,8 @@ export default function ManagerComputePage() {
               disabled={
                 isComputing ||
                 !selectedServicePeriodId ||
-                totalsStatus === 'missing' ||
-                totalsStatus === 'checking'
+                entriesStatus === 'missing' ||
+                entriesStatus === 'checking'
               }
             >
               {isComputing ? 'Computing…' : 'Compute payouts'}

@@ -26,15 +26,15 @@ export default function AppHeader({ title, subtitle }) {
   const links = useMemo(() => {
     if (!session) return []
 
-    // Full admin (manager): all routes
+    // Full admin (manager): all routes - Entries is primary
     if (role === 'manager') {
       return [
-        { href: '/dashboard', label: 'Dashboard' },
         { href: '/manager/entries', label: 'Entries' },
+        { href: '/manager/summary', label: 'Summary' },
+        { href: '/dashboard', label: 'Dashboard' },
         { href: '/manager/compute', label: 'Compute' },
         { href: '/manager/kitchen-hours', label: 'Kitchen hours' },
-        { href: '/manager/kitchen-weekly', label: 'Kitchen weekly' },
-        { href: '/manager/summary', label: 'Summary' }
+        { href: '/manager/kitchen-weekly', label: 'Kitchen weekly' }
       ]
     }
 
