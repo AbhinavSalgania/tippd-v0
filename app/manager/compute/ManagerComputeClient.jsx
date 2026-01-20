@@ -21,11 +21,35 @@ function asNumber(value, fieldName) {
   return n
 }
 
+/**
+ * Parse dollar amount from a line item description string.
+ * Handles formats like: "$55.00", "-$55.00", "+$55.00"
+ * Returns the parsed number or null if not found.
+ */
+function parseAmountFromDescription(description) {
+  if (typeof description !== 'string') return null
+  
+  // Match patterns like: -$55.00, +$55.00, $55.00
+  // Also handle amounts at end of line after colon like "Kitchen tip-out: -$55.00"
+  const match = description.match(/([+-]?)\$(\d+(?:\.\d{1,2})?)/)
+  if (!match) return null
+  
+  const sign = match[1]
+  const value = parseFloat(match[2])
+  
+  if (!Number.isFinite(value)) return null
+  
+  // Apply sign
+  if (sign === '-') return -value
+  return value
+}
+
 function normalizeLineItems(lineItems) {
   if (!Array.isArray(lineItems)) return []
   return lineItems.map((li, idx) => {
     if (typeof li === 'string') {
-      return { sort_order: idx, description: li, amount: null }
+      const parsedAmount = parseAmountFromDescription(li)
+      return { sort_order: idx, description: li, amount: parsedAmount }
     }
     if (li && typeof li === 'object') {
       const description =
@@ -34,10 +58,15 @@ function normalizeLineItems(lineItems) {
           : li.description == null
             ? JSON.stringify(li)
             : String(li.description)
-      const amount = li.amount == null ? null : Number(li.amount)
-      return { sort_order: idx, description, amount: Number.isFinite(amount) ? amount : null }
+      // If amount is provided, use it; otherwise try to parse from description
+      let amount = li.amount == null ? null : Number(li.amount)
+      if (!Number.isFinite(amount)) {
+        amount = parseAmountFromDescription(description)
+      }
+      return { sort_order: idx, description, amount }
     }
-    return { sort_order: idx, description: String(li), amount: null }
+    const strLi = String(li)
+    return { sort_order: idx, description: strLi, amount: parseAmountFromDescription(strLi) }
   })
 }
 

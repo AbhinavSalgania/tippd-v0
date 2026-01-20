@@ -1,6 +1,6 @@
 begin;
 
--- Employees (2 servers, bartenders, kitchen + kitchen manager)
+-- Employees (2 servers, bartenders, kitchen, kitchen manager, and manager)
 insert into public.employees (employee_code, display_name, pin, role)
 values
   ('S001', 'Server 1', '1111', 'server'),
@@ -8,7 +8,8 @@ values
   ('B001', 'Bartender 1', '3333', 'bartender'),
   ('B002', 'Bartender 2', '4444', 'bartender'),
   ('K001', 'Kitchen 1', '5555', 'kitchen'),
-  ('KM01', 'Kitchen Manager', '6666', 'kitchen_manager')
+  ('KM01', 'Kitchen Manager', '6666', 'kitchen_manager'),
+  ('M001', 'Manager', '0000', 'manager')
 on conflict (employee_code) do nothing;
 
 -- Service periods: one lunch + one dinner on same date
@@ -47,8 +48,9 @@ select * from (
   select (select service_period_id from sp_lunch), (select employee_id from e where employee_code='S002'),
          'server', null::smallint, 850.00::numeric, 160.00::numeric
   union all
+  -- Bartenders have sales too (they serve tables + make drinks)
   select (select service_period_id from sp_lunch), (select employee_id from e where employee_code='B001'),
-         'bartender', 1::smallint, 0.00::numeric, 180.00::numeric
+         'bartender', 1::smallint, 600.00::numeric, 180.00::numeric
 
   -- Dinner: 2 servers + 2 bartenders (slot 1 + 2)
   union all
@@ -59,11 +61,12 @@ select * from (
   select (select service_period_id from sp_dinner), (select employee_id from e where employee_code='S002'),
          'server', null::smallint, 120.00::numeric, 20.00::numeric
   union all
+  -- Bartenders have sales too
   select (select service_period_id from sp_dinner), (select employee_id from e where employee_code='B001'),
-         'bartender', 1::smallint, 0.00::numeric, 250.00::numeric
+         'bartender', 1::smallint, 800.00::numeric, 250.00::numeric
   union all
   select (select service_period_id from sp_dinner), (select employee_id from e where employee_code='B002'),
-         'bartender', 2::smallint, 0.00::numeric, 190.00::numeric
+         'bartender', 2::smallint, 500.00::numeric, 190.00::numeric
 ) v
 on conflict (service_period_id, employee_id) do nothing;
 

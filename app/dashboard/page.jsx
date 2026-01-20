@@ -55,23 +55,80 @@ function comparePeriod(a, b) {
 }
 
 /**
- * Filter line items based on employee role.
+ * Parse dollar amount from a description string.
+ * Handles: "$55.00", "-$55.00", "+$55.00"
+ * Returns null if no amount found.
+ */
+function parseAmountFromDescription(description) {
+  if (typeof description !== 'string') return null
+  
+  // Match patterns like: -$55.00, +$55.00, $55.00
+  const match = description.match(/([+-]?)\$(\d+(?:\.\d{1,2})?)/)
+  if (!match) return null
+  
+  const sign = match[1]
+  const value = parseFloat(match[2])
+  
+  if (!Number.isFinite(value)) return null
+  
+  // Apply sign
+  if (sign === '-') return -value
+  return value
+}
+
+/**
+ * Clean a line item description by removing inline dollar amounts.
+ * "Tips collected: $20.00" → "Tips collected"
+ * "Kitchen tip-out: -$40.00" → "Kitchen tip-out"
+ */
+function cleanDescription(description) {
+  if (typeof description !== 'string') return ''
+  // Remove patterns like ": $20.00", ": -$20.00", ": +$20.00" at end
+  // Also handle "below $150 threshold" type patterns - keep those
+  return description
+    .replace(/:\s*[+-]?\$[\d,.]+\s*$/, '')
+    .replace(/\s*[+-]?\$[\d,.]+\s*$/, '')
+    .trim()
+}
+
+/**
+ * Filter line items based on employee role and remove metadata lines.
  * - Bartenders should NOT see "Bartender tip-out" lines (they don't pay this)
  * - Servers see all their deductions
+ * - Remove "Service period:" and "Employee:" lines (UUIDs are not user-friendly)
+ * - Remove "Role:" line (already shown in badge)
+ * - Remove "Sales:" line (not typically shown to employees)
  */
 function filterLineItemsForRole(items, role) {
   if (!Array.isArray(items)) return []
   
-  return items.filter((item) => {
-    const desc = (item.description || '').toLowerCase()
-    
-    // Bartenders don't see bartender tip-out (they receive, not pay)
-    if (role === 'bartender' && desc.includes('bartender tip-out')) {
-      return false
-    }
-    
-    return true
-  })
+  return items
+    .filter((item) => {
+      const desc = (item.description || '').toLowerCase()
+      
+      // Filter out metadata lines that contain UUIDs or redundant info
+      if (desc.startsWith('service period:')) return false
+      if (desc.startsWith('employee:')) return false
+      if (desc.startsWith('role:')) return false
+      if (desc.startsWith('sales:')) return false
+      
+      // Bartenders don't see bartender tip-out (they receive, not pay)
+      const normalizedRole = (role || '').toLowerCase()
+      if (normalizedRole === 'bartender' && desc.includes('bartender tip-out')) {
+        return false
+      }
+      
+      return true
+    })
+    .map((item) => {
+      // Parse amount from description if not already set
+      const parsedAmount = item.amount != null ? item.amount : parseAmountFromDescription(item.description)
+      return {
+        ...item,
+        amount: parsedAmount,
+        cleanedDescription: cleanDescription(item.description)
+      }
+    })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -447,9 +504,11 @@ export default function DashboardPage() {
                                   {items.map((li, idx) => {
                                     const amount = Number(li.amount)
                                     const isNegative = amount < 0
-                                    const isPositive = amount > 0
-                                    const isNetTips = (li.description || '').toLowerCase().includes('net tips')
-                                    const isOwed = (li.description || '').toLowerCase().includes('owed')
+                                    const desc = (li.description || '').toLowerCase()
+                                    const isNetTips = desc.includes('net tips') || desc.includes('net after')
+                                    const isOwed = desc.includes('owed')
+                                    const isBelowThreshold = desc.includes('below') && desc.includes('threshold')
+                                    const displayLabel = li.cleanedDescription || li.description || ''
 
                                     return (
                                       <li
@@ -458,10 +517,10 @@ export default function DashboardPage() {
                                           isNetTips || isOwed ? 'border-t border-zinc-200 pt-2 mt-2' : ''
                                         }`}
                                       >
-                                        <span className="text-zinc-700">{li.description}</span>
-                                        {li.amount != null ? (
+                                        <span className="text-zinc-700">{displayLabel}</span>
+                                        {li.amount != null && !isBelowThreshold ? (
                                           <span
-                                            className={`font-medium tabular-nums ${
+                                            className={`font-medium tabular-nums whitespace-nowrap ${
                                               isNegative
                                                 ? 'text-red-600'
                                                 : isOwed
