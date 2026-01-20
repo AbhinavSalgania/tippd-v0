@@ -153,7 +153,7 @@ function KitchenCard() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:border-zinc-300 hover:bg-zinc-100 transition-colors">
+      <div className="h-full rounded-lg border border-zinc-200 bg-zinc-50 p-4 transition-colors hover:border-zinc-300 hover:bg-zinc-100">
         <div className="flex items-center justify-between">
           <div className="text-sm font-semibold text-zinc-900">Kitchen</div>
           <svg
