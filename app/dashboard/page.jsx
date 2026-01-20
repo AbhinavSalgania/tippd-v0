@@ -153,6 +153,7 @@ export default function DashboardPage() {
   const role = session?.role || ''
   const isFoh = role === 'server' || role === 'bartender'
   const isBoh = role === 'kitchen' || role === 'kitchen_manager'
+  const isManager = role === 'manager'
 
   const toggleDetails = useCallback((payoutId) => {
     setExpandedPayoutIds((prev) => {
@@ -323,6 +324,11 @@ export default function DashboardPage() {
           })
 
           setRecentHours(logs)
+          return
+        }
+
+        if (s.role === 'manager') {
+          // Managers don't have personal tip data - they use manager tools
           return
         }
 
@@ -644,6 +650,70 @@ export default function DashboardPage() {
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        ) : isManager ? (
+          /* ─────────────────────────────────────────────────────────────────
+             Manager Dashboard
+             ───────────────────────────────────────────────────────────────── */
+          <div className="space-y-6">
+            <div className="rounded-xl border border-zinc-200 bg-white p-6">
+              <h2 className="text-lg font-semibold text-zinc-900">Manager Tools</h2>
+              <p className="mt-1 text-sm text-zinc-600">
+                Use the navigation above to manage service periods, compute payouts, and view summaries.
+              </p>
+              
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <a
+                  href="/manager/entries"
+                  className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:border-zinc-300 hover:bg-zinc-100 transition-colors"
+                >
+                  <div className="text-sm font-semibold text-zinc-900">Entries</div>
+                  <div className="mt-1 text-xs text-zinc-600">
+                    Enter sales and tips for servers and bartenders
+                  </div>
+                </a>
+                
+                <a
+                  href="/manager/compute"
+                  className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:border-zinc-300 hover:bg-zinc-100 transition-colors"
+                >
+                  <div className="text-sm font-semibold text-zinc-900">Compute</div>
+                  <div className="mt-1 text-xs text-zinc-600">
+                    Calculate tip distributions for a service period
+                  </div>
+                </a>
+                
+                <a
+                  href="/manager/kitchen-hours"
+                  className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:border-zinc-300 hover:bg-zinc-100 transition-colors"
+                >
+                  <div className="text-sm font-semibold text-zinc-900">Kitchen Hours</div>
+                  <div className="mt-1 text-xs text-zinc-600">
+                    Log kitchen staff hours for tip pool allocation
+                  </div>
+                </a>
+                
+                <a
+                  href="/manager/kitchen-weekly"
+                  className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:border-zinc-300 hover:bg-zinc-100 transition-colors"
+                >
+                  <div className="text-sm font-semibold text-zinc-900">Kitchen Weekly</div>
+                  <div className="mt-1 text-xs text-zinc-600">
+                    Calculate weekly kitchen tip payouts
+                  </div>
+                </a>
+                
+                <a
+                  href="/manager/summary"
+                  className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:border-zinc-300 hover:bg-zinc-100 transition-colors"
+                >
+                  <div className="text-sm font-semibold text-zinc-900">Summary</div>
+                  <div className="mt-1 text-xs text-zinc-600">
+                    View payout summaries and reports
+                  </div>
+                </a>
+              </div>
             </div>
           </div>
         ) : (
