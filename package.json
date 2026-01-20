@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node lib/tipCalculator.test.mjs"
+    "test": "node lib/tipCalculator.test.mjs",
+    "publish:all": "node scripts/publishAllServicePeriods.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",

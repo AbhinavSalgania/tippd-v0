@@ -20,6 +20,23 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Dev Script: publish:all
+
+This repo includes a dev-only script to republish derived payout tables for all service periods. It has strict safety gates and is safe to delete when no longer needed.
+
+Safety gates:
+- Refuses to run when `NODE_ENV=production`.
+- Refuses to run unless Supabase URL is local (`http://localhost:*` or `http://127.0.0.1:*`).
+- Requires explicit `--yes` flag for writes.
+- Supports `--dry-run` for read-only previews.
+
+Usage:
+```bash
+supabase db reset
+npm run publish:all -- --dry-run
+npm run publish:all -- --yes
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
