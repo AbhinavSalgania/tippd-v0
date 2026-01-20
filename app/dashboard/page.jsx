@@ -24,6 +24,18 @@ function formatMoneyPlain(value) {
   return Number.isFinite(n) ? n.toFixed(2) : '0.00'
 }
 
+function formatPct(value) {
+  const n = Number(value)
+  return Number.isFinite(n) ? `${n.toFixed(1)}%` : '—'
+}
+
+function safePct(numerator, denominator) {
+  const n = Number(numerator)
+  const d = Number(denominator)
+  if (!Number.isFinite(n) || !Number.isFinite(d) || d === 0) return null
+  return (n / d) * 100
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return 'Unknown date'
   try {
@@ -324,10 +336,32 @@ export default function DashboardPage() {
             }
           }
 
+          // Step 4: Fetch sales + tips collected for this employee by service period
+          /** @type {Record<string, { sales_total: number | null, tips_collected: number | null }>} */
+          const entryByPeriodId = {}
+          if (servicePeriodIds.length > 0) {
+            const salesRes = await supabase
+              .from('service_period_entries')
+              .select('service_period_id, employee_id, sales_total, tips_collected')
+              .eq('employee_id', s.employeeId)
+              .in('service_period_id', servicePeriodIds)
+
+            if (salesRes.error) throw salesRes.error
+            for (const entry of salesRes.data || []) {
+              if (!entry?.service_period_id) continue
+              entryByPeriodId[entry.service_period_id] = {
+                sales_total: entry.sales_total ?? null,
+                tips_collected: entry.tips_collected ?? null
+              }
+            }
+          }
+
           // Merge all data in JavaScript
           payouts = payouts.map((p) => ({
             ...p,
             service_periods: periodById[p.service_period_id] || null,
+            sales_total: entryByPeriodId[p.service_period_id]?.sales_total ?? null,
+            tips_collected: entryByPeriodId[p.service_period_id]?.tips_collected ?? null,
             payout_line_items: (lineItemsByPayoutId[p.id] || [])
               .slice()
               .sort((a, b) => {
@@ -446,7 +480,22 @@ export default function DashboardPage() {
     const payouts = Array.isArray(fohPayouts) ? fohPayouts : []
     const totalNetTips = payouts.reduce((sum, p) => sum + Number(p.net_tips || 0), 0)
     const totalOwed = payouts.reduce((sum, p) => sum + Number(p.amount_owed_to_house || 0), 0)
-    return { totalNetTips, totalOwed, count: payouts.length }
+    const totalCollectedTips = payouts.reduce((sum, p) => sum + Number(p.tips_collected || 0), 0)
+    const totalKitchenTipOut = payouts.reduce((sum, p) => sum + Number(p.kitchen_contribution || 0), 0)
+    const totalBarTipOut = payouts.reduce((sum, p) => sum + Number(p.bartender_contribution || 0), 0)
+    const totalSales = payouts.reduce((sum, p) => {
+      const sales = Number(p.sales_total)
+      return sum + (Number.isFinite(sales) ? sales : 0)
+    }, 0)
+    return {
+      totalNetTips,
+      totalCollectedTips,
+      totalOwed,
+      totalKitchenTipOut,
+      totalBarTipOut,
+      totalSales,
+      count: payouts.length
+    }
   }, [fohPayouts])
 
   const mostRecentWeek = useMemo(() => {
@@ -484,27 +533,50 @@ export default function DashboardPage() {
              ───────────────────────────────────────────────────────────────── */
           <div className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-xl border border-zinc-200 bg-white p-4">
-                <div className="text-xs text-zinc-500">Total net tips</div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm h-full">
+                <div className="text-sm text-zinc-500">Net tips</div>
                 <div
-                  className={`mt-2 text-2xl font-semibold ${
+                  className={`mt-2 text-4xl font-semibold tracking-tight ${
                     Number(fohSummary.totalNetTips) < 0 ? 'text-red-600' : 'text-emerald-600'
                   }`}
                 >
                   {formatMoney(fohSummary.totalNetTips)}
                 </div>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-white p-4">
-                <div className="text-xs text-zinc-500">Total owed to house</div>
-                <div className="mt-2 text-2xl font-semibold text-zinc-900">
-                  {formatMoney(fohSummary.totalOwed)}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm h-full min-w-0">
+                <div className="text-sm text-zinc-500">Tip rate</div>
+                <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums">
+                  {formatPct(safePct(fohSummary.totalCollectedTips, fohSummary.totalSales))}
+                </div>
+                <div className="mt-2 text-sm text-zinc-600 whitespace-normal break-words leading-snug min-w-0">
+                  Guests tipped on average (before tip-outs)
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2 min-w-0">
+                  <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-700">
+                    Net after tip-outs
+                  </span>
+                  <span className="text-sm font-semibold text-zinc-900 tabular-nums">
+                    {formatPct(safePct(fohSummary.totalNetTips, fohSummary.totalSales))}
+                  </span>
                 </div>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-white p-4">
-                <div className="text-xs text-zinc-500">Service periods</div>
-                <div className="mt-2 text-2xl font-semibold text-zinc-900">{fohSummary.count}</div>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm h-full">
+                <div className="text-sm text-zinc-500">Total sales</div>
+                <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900">
+                  {formatMoney(fohSummary.totalSales)}
+                </div>
               </div>
+            </div>
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2 text-xs text-zinc-600 flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>Service periods: {fohSummary.count}</span>
+              <span>
+                Avg sales / shift: {fohSummary.count > 0 ? formatMoney(fohSummary.totalSales / fohSummary.count) : '—'}
+              </span>
+              <span>
+                Avg net tips / shift:{' '}
+                {fohSummary.count > 0 ? formatMoney(fohSummary.totalNetTips / fohSummary.count) : '—'}
+              </span>
             </div>
 
             {/* Recent Shifts List */}
@@ -529,6 +601,12 @@ export default function DashboardPage() {
                     const type = period.period_type || ''
                     const net = Number(p.net_tips || 0)
                     const owed = Number(p.amount_owed_to_house || 0)
+                    const salesRaw = p.sales_total
+                    const salesTotal = Number(salesRaw)
+                    const collectedRaw = p.tips_collected
+                    const collectedTips = Number(collectedRaw)
+                    const collectedPct = formatPct(safePct(collectedTips, salesTotal))
+                    const netPct = formatPct(safePct(net, salesTotal))
                     const expanded = expandedPayoutIds.has(p.id)
                     const rawItems = Array.isArray(p.payout_line_items) ? p.payout_line_items : []
                     const items = filterLineItemsForRole(rawItems, role)
@@ -550,6 +628,14 @@ export default function DashboardPage() {
                                   Owes house
                                 </span>
                               ) : null}
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 tabular-nums">
+                                Sales {formatMoney(Number.isFinite(salesTotal) ? salesTotal : 0)}
+                              </span>
+                              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700 tabular-nums">
+                                Collected tip %: {collectedPct}
+                              </span>
                             </div>
                           </div>
 
@@ -586,45 +672,65 @@ export default function DashboardPage() {
                                 <div className="mt-3 text-sm text-zinc-600">
                                   No breakdown details available.
                                 </div>
-                              ) : (
-                                <ul className="mt-3 space-y-2">
-                                  {items.map((li, idx) => {
-                                    const amount = Number(li.amount)
-                                    const isNegative = amount < 0
-                                    const desc = (li.description || '').toLowerCase()
-                                    const isNetTips = desc.includes('net tips') || desc.includes('net after')
-                                    const isOwed = desc.includes('owed')
-                                    const isBelowThreshold = desc.includes('below') && desc.includes('threshold')
-                                    const displayLabel = li.cleanedDescription || li.description || ''
+                              ) : null}
+                              <div className="mt-3 rounded-md border border-zinc-200 bg-white p-3">
+                                <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                                  Rates
+                                </div>
+                                <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                                  <span className="text-zinc-700">Tips collected % of sales</span>
+                                  <span className="font-medium tabular-nums text-zinc-900 text-right">
+                                    {collectedPct}
+                                  </span>
+                                  <span className="text-zinc-700">Net tip % of sales</span>
+                                  <span className="font-medium tabular-nums text-zinc-900 text-right">
+                                    {netPct}
+                                  </span>
+                                </div>
+                              </div>
+                              <ul className="mt-3 space-y-2">
+                                {items.map((li, idx) => {
+                                  const amount = Number(li.amount)
+                                  const isNegative = amount < 0
+                                  const desc = (li.description || '').toLowerCase()
+                                  const isNetTips = desc.includes('net tips') || desc.includes('net after')
+                                  const isOwed = desc.includes('owed')
+                                  const isBelowThreshold = desc.includes('below') && desc.includes('threshold')
+                                  const displayLabel = li.cleanedDescription || li.description || ''
 
-                                    return (
-                                      <li
-                                        key={li.id || `${p.id}-${idx}`}
-                                        className={`flex items-start justify-between gap-4 text-sm ${
-                                          isNetTips || isOwed ? 'border-t border-zinc-200 pt-2 mt-2' : ''
-                                        }`}
-                                      >
-                                        <span className="text-zinc-700">{displayLabel}</span>
-                                        {li.amount != null && !isBelowThreshold ? (
-                                          <span
-                                            className={`font-medium tabular-nums whitespace-nowrap ${
-                                              isNegative
-                                                ? 'text-red-600'
-                                                : isOwed
-                                                ? 'text-amber-700'
-                                                : isNetTips
-                                                ? 'text-emerald-600'
-                                                : 'text-zinc-900'
-                                            }`}
-                                          >
-                                            {formatMoney(li.amount)}
-                                          </span>
-                                        ) : null}
-                                      </li>
-                                    )
-                                  })}
-                                </ul>
-                              )}
+                                  return (
+                                    <li
+                                      key={li.id || `${p.id}-${idx}`}
+                                      className={`flex items-start justify-between gap-4 text-sm ${
+                                        isNetTips || isOwed ? 'border-t border-zinc-200 pt-2 mt-2' : ''
+                                      }`}
+                                    >
+                                      <span className="text-zinc-700">{displayLabel}</span>
+                                      {li.amount != null && !isBelowThreshold ? (
+                                        <span
+                                          className={`font-medium tabular-nums whitespace-nowrap ${
+                                            isNegative
+                                              ? 'text-red-600'
+                                              : isOwed
+                                              ? 'text-amber-700'
+                                              : isNetTips
+                                              ? 'text-emerald-600'
+                                              : 'text-zinc-900'
+                                          }`}
+                                        >
+                                          {formatMoney(li.amount)}
+                                        </span>
+                                      ) : null}
+                                    </li>
+                                  )
+                                })}
+                                <li className="border-t border-zinc-200 pt-2 mt-2 flex items-start justify-between gap-4 text-sm">
+                                  <span className="text-zinc-700">Sales total</span>
+                                  <span className="font-medium tabular-nums whitespace-nowrap text-zinc-900">
+                                    {formatMoney(Number.isFinite(salesTotal) ? salesTotal : 0)}
+                                  </span>
+                                </li>
+                              </ul>
                             </div>
                           </div>
                         </div>
