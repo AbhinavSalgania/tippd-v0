@@ -30,7 +30,9 @@ values
   ('B002', 'Bartender 2', '1313', true, 'bartender'),
   ('B003', 'Bartender 3', '1414', true, 'bartender'),
   ('B004', 'Bartender 4', '1515', true, 'bartender'),
-  ('B005', 'Bartender 5', '1616', true, 'bartender');
+  ('B005', 'Bartender 5', '1616', true, 'bartender'),
+  ('M001', 'Manager 1', '0000', true, 'manager'),
+  ('K001', 'Kitchen Manager 1', '0001', true, 'kitchen_manager');
 
 insert into public.employee_allowed_roles (employee_id, role)
 select id, role
@@ -163,3 +165,7 @@ from public.employees e
 left join public.shift_assignments sa on sa.employee_id = e.id
 group by e.employee_code, e.display_name
 order by e.employee_code;
+select role, count(*) as role_count
+from public.employees
+group by role
+order by role;
