@@ -29,11 +29,17 @@ function sanitizeUrl(url) {
   }
 }
 
-if (!supabaseUrl.startsWith('http://127.0.0.1:') && !supabaseUrl.startsWith('http://localhost:')) {
+const allowCloud = args.has('--cloud')
+
+if (
+  !allowCloud &&
+  !supabaseUrl.startsWith('http://127.0.0.1:') &&
+  !supabaseUrl.startsWith('http://localhost:')
+) {
   exitWith(
-    `Refusing to run: Supabase URL must be local (http://127.0.0.1:* or http://localhost:*). Got: ${sanitizeUrl(
-      supabaseUrl
-    )}`
+    `Refusing to run: Supabase URL must be local unless you pass --cloud.\n` +
+      `Re-run with: npm run publish:all -- --cloud --dry-run\n` +
+      `Got: ${sanitizeUrl(supabaseUrl)}`
   )
 }
 
