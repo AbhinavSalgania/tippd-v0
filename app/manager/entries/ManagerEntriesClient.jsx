@@ -777,8 +777,16 @@ export default function ManagerEntriesPage() {
           </div>
 
           {activePeriod ? (
-            <div className="mt-3 text-xs text-zinc-500">
-              Selected service_period_id: <span className="font-mono">{activePeriod.id}</span>
+            <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                Selected service_period_id: <span className="font-mono">{activePeriod.id}</span>
+              </div>
+              <button
+                onClick={() => router.push(`/manager/assignments/${activePeriod.id}`)}
+                className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+              >
+                View assignments
+              </button>
             </div>
           ) : (
             <div className="mt-3 text-xs text-zinc-500">No service period selected.</div>
@@ -1014,4 +1022,3 @@ export default function ManagerEntriesPage() {
     </div>
   )
 }
-
