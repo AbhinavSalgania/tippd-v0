@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { readSession, SESSION_KEY } from '@/app/lib/requireRole'
 
 export default function AppHeader({ title, subtitle }) {
@@ -11,6 +11,9 @@ export default function AppHeader({ title, subtitle }) {
 
   const [mounted, setMounted] = useState(false)
   const [session, setSession] = useState(null)
+  const [kitchenDropdownOpen, setKitchenDropdownOpen] = useState(false)
+  const desktopDropdownRef = useRef(null)
+  const mobileDropdownRef = useRef(null)
 
   useEffect(() => {
     setMounted(true)
@@ -21,19 +24,22 @@ export default function AppHeader({ title, subtitle }) {
     setSession(readSession())
   }, [mounted])
 
+  // Close dropdown on navigation
+  useEffect(() => {
+    setKitchenDropdownOpen(false)
+  }, [pathname])
+
   const role = session?.role || ''
 
   const links = useMemo(() => {
     if (!session) return []
 
-    // Full admin (manager): all routes - Entries is primary
+    // Full admin (manager): all routes - Entries is primary (kitchen links moved to dropdown)
     if (role === 'manager') {
       return [
-        { href: '/manager/entries', label: 'Entries' },
-        { href: '/manager/summary', label: 'Summary' },
         { href: '/dashboard', label: 'Dashboard' },
-        { href: '/manager/kitchen-hours', label: 'Kitchen hours' },
-        { href: '/manager/kitchen-weekly', label: 'Kitchen weekly' }
+        { href: '/manager/entries', label: 'Entries' },
+        { href: '/manager/summary', label: 'Summary' }
       ]
     }
 
@@ -49,6 +55,13 @@ export default function AppHeader({ title, subtitle }) {
     // Server / bartender / other: dashboard only
     return [{ href: '/dashboard', label: 'Dashboard' }]
   }, [session, role])
+
+  const kitchenLinks = useMemo(() => {
+    return [
+      { href: '/manager/kitchen-hours', label: 'Kitchen Hours' },
+      { href: '/manager/kitchen-weekly', label: 'Kitchen Weekly' }
+    ]
+  }, [])
 
   const employeeLabel = useMemo(() => {
     if (!session) return ''
@@ -88,6 +101,69 @@ export default function AppHeader({ title, subtitle }) {
               </Link>
             )
           })}
+          
+          {/* Kitchen dropdown for managers */}
+          {role === 'manager' && (
+            <div
+              className="relative"
+              ref={desktopDropdownRef}
+              onMouseEnter={() => setKitchenDropdownOpen(true)}
+              onMouseLeave={() => setKitchenDropdownOpen(false)}
+            >
+              <button
+                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition ${
+                  pathname?.startsWith('/manager/kitchen-')
+                    ? 'bg-zinc-900 text-white'
+                    : 'text-zinc-700 hover:bg-zinc-100'
+                }`}
+              >
+                Kitchen
+                <svg
+                  className={`h-3 w-3 transition-transform ${
+                    kitchenDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+              
+              {kitchenDropdownOpen && (
+                <>
+                  {/* Invisible bridge to maintain hover */}
+                  <div className="absolute right-0 top-full h-1 w-full" />
+                  <div className="absolute right-0 top-full pt-1 w-48">
+                    <div className="rounded-lg border border-zinc-200 bg-white shadow-lg">
+                      {kitchenLinks.map((l) => {
+                        const active = pathname === l.href || pathname?.startsWith(`${l.href}/`)
+                        return (
+                          <Link
+                            key={l.href}
+                            href={l.href}
+                            className={`block rounded-md px-3 py-2 text-xs font-medium transition first:rounded-t-lg last:rounded-b-lg ${
+                              active
+                                ? 'bg-zinc-900 text-white'
+                                : 'text-zinc-700 hover:bg-zinc-100'
+                            }`}
+                            onClick={() => setKitchenDropdownOpen(false)}
+                          >
+                            {l.label}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -133,6 +209,69 @@ export default function AppHeader({ title, subtitle }) {
                 </Link>
               )
             })}
+            
+            {/* Kitchen dropdown for managers (mobile) */}
+            {role === 'manager' && (
+              <div
+                className="relative"
+                ref={mobileDropdownRef}
+                onMouseEnter={() => setKitchenDropdownOpen(true)}
+                onMouseLeave={() => setKitchenDropdownOpen(false)}
+              >
+                <button
+                  className={`flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium ${
+                    pathname?.startsWith('/manager/kitchen-')
+                      ? 'bg-zinc-900 text-white'
+                      : 'text-zinc-700 hover:bg-zinc-100'
+                  }`}
+                >
+                  Kitchen
+                  <svg
+                    className={`h-3 w-3 transition-transform ${
+                      kitchenDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+                
+                {kitchenDropdownOpen && (
+                  <>
+                    {/* Invisible bridge to maintain hover */}
+                    <div className="absolute left-0 top-full h-1 w-full" />
+                    <div className="absolute left-0 top-full pt-1 w-48 z-50">
+                      <div className="rounded-lg border border-zinc-200 bg-white shadow-lg">
+                        {kitchenLinks.map((l) => {
+                          const active = pathname === l.href || pathname?.startsWith(`${l.href}/`)
+                          return (
+                            <Link
+                              key={l.href}
+                              href={l.href}
+                              className={`block rounded-md px-3 py-2 text-xs font-medium transition first:rounded-t-lg last:rounded-b-lg ${
+                                active
+                                  ? 'bg-zinc-900 text-white'
+                                  : 'text-zinc-700 hover:bg-zinc-100'
+                              }`}
+                              onClick={() => setKitchenDropdownOpen(false)}
+                            >
+                              {l.label}
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       ) : null}

@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 import AppHeader from '@/app/components/AppHeader'
 import { readSession, SESSION_KEY } from '@/app/lib/requireRole'
@@ -129,6 +130,86 @@ function filterLineItemsForRole(items, role) {
         cleanedDescription: cleanDescription(item.description)
       }
     })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Kitchen Card Component
+// ─────────────────────────────────────────────────────────────────────────────
+
+function KitchenCard() {
+  const [isHovered, setIsHovered] = useState(false)
+  const cardRef = useRef(null)
+  const pathname = usePathname()
+
+  const kitchenLinks = [
+    { href: '/manager/kitchen-hours', label: 'Kitchen Hours', description: 'Log kitchen staff hours for tip pool allocation' },
+    { href: '/manager/kitchen-weekly', label: 'Kitchen Weekly', description: 'Calculate weekly kitchen tip payouts' }
+  ]
+
+  return (
+    <div
+      ref={cardRef}
+      className="relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:border-zinc-300 hover:bg-zinc-100 transition-colors">
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-semibold text-zinc-900">Kitchen</div>
+          <svg
+            className={`h-4 w-4 text-zinc-600 transition-transform ${
+              isHovered ? 'rotate-180' : ''
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+        <div className="mt-1 text-xs text-zinc-600">
+          Manage kitchen hours and weekly payouts
+        </div>
+      </div>
+      
+      {isHovered && (
+        <>
+          {/* Invisible bridge to maintain hover */}
+          <div className="absolute left-0 top-full h-1 w-full" />
+          <div className="absolute left-0 top-full pt-1 w-full z-10">
+            <div className="rounded-lg border border-zinc-200 bg-white shadow-lg">
+              {kitchenLinks.map((l) => {
+                const active = pathname === l.href || pathname?.startsWith(`${l.href}/`)
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    className={`block rounded-md px-3 py-2 text-xs transition first:rounded-t-lg last:rounded-b-lg ${
+                      active
+                        ? 'bg-zinc-900 text-white'
+                        : 'text-zinc-700 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <div className="font-medium">{l.label}</div>
+                    <div className={`mt-0.5 text-[10px] ${
+                      active ? 'text-zinc-300' : 'text-zinc-500'
+                    }`}>
+                      {l.description}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -675,26 +756,6 @@ export default function DashboardPage() {
                 </a>
                 
                 <a
-                  href="/manager/kitchen-hours"
-                  className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:border-zinc-300 hover:bg-zinc-100 transition-colors"
-                >
-                  <div className="text-sm font-semibold text-zinc-900">Kitchen Hours</div>
-                  <div className="mt-1 text-xs text-zinc-600">
-                    Log kitchen staff hours for tip pool allocation
-                  </div>
-                </a>
-                
-                <a
-                  href="/manager/kitchen-weekly"
-                  className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:border-zinc-300 hover:bg-zinc-100 transition-colors"
-                >
-                  <div className="text-sm font-semibold text-zinc-900">Kitchen Weekly</div>
-                  <div className="mt-1 text-xs text-zinc-600">
-                    Calculate weekly kitchen tip payouts
-                  </div>
-                </a>
-                
-                <a
                   href="/manager/summary"
                   className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:border-zinc-300 hover:bg-zinc-100 transition-colors"
                 >
@@ -703,6 +764,8 @@ export default function DashboardPage() {
                     View payout summaries and reports
                   </div>
                 </a>
+                
+                <KitchenCard />
               </div>
             </div>
           </div>
