@@ -41,32 +41,29 @@ with
 insert into public.service_period_entries
   (service_period_id, employee_id, role, bartender_slot, sales_total, tips_collected)
 select * from (
-  -- Lunch: 2 servers + 1 bartender
+  -- Lunch: 2 servers + 1 bartender (sales $400-$800, tips 18-22%)
   select (select service_period_id from sp_lunch), (select employee_id from e where employee_code='S001'),
-         'server', null::smallint, 1100.00::numeric, 210.00::numeric
+         'server', null::smallint, 750.00::numeric, 150.00::numeric  -- 20% tips
   union all
   select (select service_period_id from sp_lunch), (select employee_id from e where employee_code='S002'),
-         'server', null::smallint, 850.00::numeric, 160.00::numeric
+         'server', null::smallint, 620.00::numeric, 112.00::numeric  -- 18% tips
   union all
-  -- Bartenders have sales too (they serve tables + make drinks)
   select (select service_period_id from sp_lunch), (select employee_id from e where employee_code='B001'),
-         'bartender', 1::smallint, 600.00::numeric, 180.00::numeric
+         'bartender', 1::smallint, 480.00::numeric, 96.00::numeric   -- 20% tips
 
-  -- Dinner: 2 servers + 2 bartenders (slot 1 + 2)
+  -- Dinner: 2 servers + 2 bartenders (sales $500-$1000, tips 18-22%)
   union all
   select (select service_period_id from sp_dinner), (select employee_id from e where employee_code='S001'),
-         'server', null::smallint, 1400.00::numeric, 260.00::numeric
+         'server', null::smallint, 950.00::numeric, 190.00::numeric  -- 20% tips
   union all
-  -- Include an under-threshold server to exercise the $150 eligibility rule in app logic
   select (select service_period_id from sp_dinner), (select employee_id from e where employee_code='S002'),
-         'server', null::smallint, 120.00::numeric, 20.00::numeric
+         'server', null::smallint, 580.00::numeric, 116.00::numeric  -- 20% tips
   union all
-  -- Bartenders have sales too
   select (select service_period_id from sp_dinner), (select employee_id from e where employee_code='B001'),
-         'bartender', 1::smallint, 800.00::numeric, 250.00::numeric
+         'bartender', 1::smallint, 720.00::numeric, 158.00::numeric  -- 22% tips
   union all
   select (select service_period_id from sp_dinner), (select employee_id from e where employee_code='B002'),
-         'bartender', 2::smallint, 500.00::numeric, 190.00::numeric
+         'bartender', 2::smallint, 540.00::numeric, 97.00::numeric   -- 18% tips
 ) v
 on conflict (service_period_id, employee_id) do nothing;
 
