@@ -18,6 +18,12 @@ function formatMoney(value) {
   return Number.isFinite(n) ? n.toFixed(2) : '0.00'
 }
 
+function formatEmployeeLabel(employee) {
+  const code = employee?.employee_code || '(unknown)'
+  const name = employee?.display_name || '—'
+  return `${code} · ${name}`
+}
+
 function roleSortKey(role) {
   // Bartenders first, then servers.
   return role === 'bartender' ? '0' : role === 'server' ? '1' : `9-${String(role || '')}`
@@ -74,7 +80,9 @@ export default function ManagerEntriesPage() {
   const [periodType, setPeriodType] = useState('lunch')
   const [activePeriod, setActivePeriod] = useState(null) // { id, period_date, period_type }
 
-  const [fohEmployees, setFohEmployees] = useState([])
+  const [shiftAssignments, setShiftAssignments] = useState([])
+  const [activeEmployeeIds, setActiveEmployeeIds] = useState([])
+  const [entriesByEmployeeId, setEntriesByEmployeeId] = useState({})
 
   // inputsByEmployeeId:
   // { [employeeId]: { sales_total: string, tips_collected: string, bartender_slot: string } }
@@ -82,17 +90,25 @@ export default function ManagerEntriesPage() {
 
   const [storedEntries, setStoredEntries] = useState([])
 
-  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false)
+  const [isLoadingAssignments, setIsLoadingAssignments] = useState(false)
   const [isLoadingPeriod, setIsLoadingPeriod] = useState(false)
   const [isLoadingEntries, setIsLoadingEntries] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
+  const [isAddingUnassigned, setIsAddingUnassigned] = useState(false)
 
   const [loadError, setLoadError] = useState(null)
   const [saveError, setSaveError] = useState(null)
   const [saveSuccess, setSaveSuccess] = useState(null)
   const [publishError, setPublishError] = useState(null)
   const [publishSuccess, setPublishSuccess] = useState(null)
+
+  const [serverSearch, setServerSearch] = useState('')
+  const [bartenderSearch, setBartenderSearch] = useState('')
+  const [showUnassigned, setShowUnassigned] = useState(false)
+  const [unassignedServerSearch, setUnassignedServerSearch] = useState('')
+  const [unassignedBartenderSearch, setUnassignedBartenderSearch] = useState('')
+  const [allowedRoleEmployees, setAllowedRoleEmployees] = useState([])
 
   useEffect(() => {
     setMounted(true)
@@ -113,7 +129,12 @@ export default function ManagerEntriesPage() {
   }, [mounted, searchParams, periodDate, periodType])
 
   const isBusy =
-    isLoadingEmployees || isLoadingPeriod || isLoadingEntries || isSaving || isPublishing
+    isLoadingAssignments ||
+    isLoadingPeriod ||
+    isLoadingEntries ||
+    isSaving ||
+    isPublishing ||
+    isAddingUnassigned
 
   const setEmployeeInput = useCallback((employeeId, patch) => {
     setInputsByEmployeeId((prev) => ({
@@ -129,151 +150,149 @@ export default function ManagerEntriesPage() {
     }))
   }, [])
 
-  const loadFohEmployees = useCallback(async () => {
-    setIsLoadingEmployees(true)
+  const loadAssignmentsAndEntries = useCallback(async (servicePeriodId) => {
+    setIsLoadingAssignments(true)
+    setIsLoadingEntries(true)
     setLoadError(null)
+    setSaveError(null)
+    setSaveSuccess(null)
     try {
-      const { data, error } = await supabase
-        .from('employees')
-        .select('id, employee_code, display_name, role, is_active')
-        .in('role', ['bartender', 'server'])
-        .eq('is_active', true)
-        .order('role', { ascending: true })
-        .order('employee_code', { ascending: true })
+      const assignmentRes = await supabase
+        .from('shift_assignments')
+        .select('id, employee_id, worked_role, station, employees ( id, employee_code, display_name, role )')
+        .eq('service_period_id', servicePeriodId)
+        .order('worked_role', { ascending: true })
+        .order('employee_id', { ascending: true })
 
-      if (error) throw error
-      const employees = Array.isArray(data) ? data : []
+      if (assignmentRes.error) throw assignmentRes.error
+      let assignments = Array.isArray(assignmentRes.data) ? assignmentRes.data : []
 
-      // Deterministic client sort (bartender first then server, then employee_code).
-      employees.sort((a, b) => {
-        const ra = roleSortKey(a.role)
-        const rb = roleSortKey(b.role)
+      assignments = assignments.slice().sort((a, b) => {
+        const ra = roleSortKey(a.worked_role)
+        const rb = roleSortKey(b.worked_role)
         if (ra !== rb) return ra.localeCompare(rb)
-        const ca = String(a.employee_code || '')
-        const cb = String(b.employee_code || '')
+        const ca = String(a?.employees?.employee_code || '')
+        const cb = String(b?.employees?.employee_code || '')
         if (ca !== cb) return ca.localeCompare(cb)
-        return String(a.id || '').localeCompare(String(b.id || ''))
+        return String(a.employee_id || '').localeCompare(String(b.employee_id || ''))
       })
 
-      setFohEmployees(employees)
-    } catch (e) {
-      setLoadError(e?.message || String(e))
-      setFohEmployees([])
-    } finally {
-      setIsLoadingEmployees(false)
-    }
-  }, [])
+      /** @type {Array<any>} */
+      let entries = []
 
-  const loadEntriesForPeriod = useCallback(
-    async (servicePeriodId) => {
-      setIsLoadingEntries(true)
-      setLoadError(null)
-      setSaveError(null)
-      setSaveSuccess(null)
-      try {
-        /** @type {Array<any>} */
-        let entries = []
+      const relRes = await supabase
+        .from('service_period_entries')
+        .select(
+          'id, service_period_id, employee_id, role, sales_total, tips_collected, bartender_slot, created_at, employees ( employee_code, display_name, role )'
+        )
+        .eq('service_period_id', servicePeriodId)
+        .order('employee_id', { ascending: true })
 
-        // Attempt relationship select first.
-        const relRes = await supabase
+      if (!relRes.error) {
+        entries = Array.isArray(relRes.data) ? relRes.data : []
+      } else {
+        const eRes = await supabase
           .from('service_period_entries')
-          .select(
-            'id, service_period_id, employee_id, role, sales_total, tips_collected, bartender_slot, created_at, employees ( employee_code, display_name, role )'
-          )
+          .select('id, service_period_id, employee_id, role, sales_total, tips_collected, bartender_slot, created_at')
           .eq('service_period_id', servicePeriodId)
           .order('employee_id', { ascending: true })
 
-        if (!relRes.error) {
-          entries = Array.isArray(relRes.data) ? relRes.data : []
-        } else {
-          // Fallback: entries -> employees lookup
-          const eRes = await supabase
-            .from('service_period_entries')
-            .select('id, service_period_id, employee_id, role, sales_total, tips_collected, bartender_slot, created_at')
-            .eq('service_period_id', servicePeriodId)
-            .order('employee_id', { ascending: true })
+        if (eRes.error) throw eRes.error
+        entries = Array.isArray(eRes.data) ? eRes.data : []
 
-          if (eRes.error) throw eRes.error
-          entries = Array.isArray(eRes.data) ? eRes.data : []
-
-          const employeeIds = Array.from(new Set(entries.map((x) => x.employee_id).filter(Boolean))).sort()
-          /** @type {Record<string, any>} */
-          const employeeById = {}
-          if (employeeIds.length > 0) {
-            const empRes = await supabase
-              .from('employees')
-              .select('id, employee_code, display_name, role')
-              .in('id', employeeIds)
-
-            if (empRes.error) throw empRes.error
-            for (const emp of empRes.data || []) employeeById[emp.id] = emp
-          }
-
-          entries = entries.map((x) => ({ ...x, employees: employeeById[x.employee_id] || null }))
-        }
-
-        // Store preview entries with deterministic ordering: bartenders first, then servers, then employee_code.
-        entries = entries.slice().sort((a, b) => {
-          const ra = roleSortKey(a.role)
-          const rb = roleSortKey(b.role)
-          if (ra !== rb) return ra.localeCompare(rb)
-          const ea = a?.employees?.employee_code || ''
-          const eb = b?.employees?.employee_code || ''
-          if (ea !== eb) return String(ea).localeCompare(String(eb))
-          return String(a.employee_id || '').localeCompare(String(b.employee_id || ''))
-        })
-
-        setStoredEntries(entries)
-
-        // Prefill inputs for currently loaded employees.
+        const employeeIds = Array.from(new Set(entries.map((x) => x.employee_id).filter(Boolean))).sort()
         /** @type {Record<string, any>} */
-        const entryByEmployeeId = {}
-        for (const e of entries) {
-          if (e?.employee_id) entryByEmployeeId[e.employee_id] = e
+        const employeeById = {}
+        if (employeeIds.length > 0) {
+          const empRes = await supabase
+            .from('employees')
+            .select('id, employee_code, display_name, role')
+            .in('id', employeeIds)
+
+          if (empRes.error) throw empRes.error
+          for (const emp of empRes.data || []) employeeById[emp.id] = emp
         }
 
-        setInputsByEmployeeId((prev) => {
-          /** @type {Record<string, { sales_total:string, tips_collected:string, bartender_slot:string }>} */
-          const next = {}
-
-          for (const emp of fohEmployees || []) {
-            const existing = entryByEmployeeId[emp.id]
-            // If user has typed but we reloaded, prefer DB values (deterministic prefill).
-            next[emp.id] = {
-              sales_total: existing?.sales_total != null ? String(existing.sales_total) : '',
-              tips_collected: existing?.tips_collected != null ? String(existing.tips_collected) : '',
-              bartender_slot: existing?.bartender_slot != null ? String(existing.bartender_slot) : ''
-            }
-          }
-
-          // Preserve any rows for employees not currently in list (rare), to avoid dropping local edits.
-          for (const [k, v] of Object.entries(prev || {})) {
-            if (!next[k]) next[k] = v
-          }
-
-          return next
-        })
-      } catch (e) {
-        setLoadError(e?.message || String(e))
-        setStoredEntries([])
-      } finally {
-        setIsLoadingEntries(false)
+        entries = entries.map((x) => ({ ...x, employees: employeeById[x.employee_id] || null }))
       }
-    },
-    [fohEmployees]
-  )
 
-  useEffect(() => {
-    if (!mounted || !isAllowed) return
-    loadFohEmployees()
-  }, [mounted, isAllowed, loadFohEmployees])
+      entries = entries.slice().sort((a, b) => {
+        const ra = roleSortKey(a.role)
+        const rb = roleSortKey(b.role)
+        if (ra !== rb) return ra.localeCompare(rb)
+        const ea = a?.employees?.employee_code || ''
+        const eb = b?.employees?.employee_code || ''
+        if (ea !== eb) return String(ea).localeCompare(String(eb))
+        return String(a.employee_id || '').localeCompare(String(b.employee_id || ''))
+      })
+
+      /** @type {Record<string, any>} */
+      const entryByEmployeeId = {}
+      for (const e of entries) {
+        if (e?.employee_id) entryByEmployeeId[e.employee_id] = e
+      }
+
+      setEntriesByEmployeeId(entryByEmployeeId)
+      setStoredEntries(entries)
+      setShiftAssignments(assignments)
+      setActiveEmployeeIds(assignments.map((a) => a.employee_id))
+
+      setInputsByEmployeeId((prev) => {
+        /** @type {Record<string, { sales_total:string, tips_collected:string, bartender_slot:string }>} */
+        const next = {}
+
+        for (const assignment of assignments || []) {
+          const employeeId = assignment.employee_id
+          const existing = entryByEmployeeId[employeeId]
+          next[employeeId] = {
+            sales_total: existing?.sales_total != null ? String(existing.sales_total) : '',
+            tips_collected: existing?.tips_collected != null ? String(existing.tips_collected) : '',
+            bartender_slot: existing?.bartender_slot != null ? String(existing.bartender_slot) : ''
+          }
+        }
+
+        for (const [k, v] of Object.entries(prev || {})) {
+          if (!next[k]) next[k] = v
+        }
+
+        return next
+      })
+    } catch (e) {
+      setLoadError(e?.message || String(e))
+      setStoredEntries([])
+      setShiftAssignments([])
+      setActiveEmployeeIds([])
+      setEntriesByEmployeeId({})
+    } finally {
+      setIsLoadingAssignments(false)
+      setIsLoadingEntries(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!mounted || !isAllowed) return
     if (!activePeriod?.id) return
-    if (fohEmployees.length === 0) return
-    loadEntriesForPeriod(activePeriod.id)
-  }, [mounted, isAllowed, activePeriod?.id, fohEmployees, loadEntriesForPeriod])
+    loadAssignmentsAndEntries(activePeriod.id)
+  }, [mounted, isAllowed, activePeriod?.id, loadAssignmentsAndEntries])
+
+  useEffect(() => {
+    if (!mounted || !isAllowed) return
+    if (!showUnassigned) return
+    const loadAllowed = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('employee_allowed_roles')
+          .select('employee_id, role, employees ( id, employee_code, display_name, role )')
+          .in('role', ['server', 'bartender'])
+        if (error) throw error
+        setAllowedRoleEmployees(Array.isArray(data) ? data : [])
+      } catch (e) {
+        setLoadError(e?.message || String(e))
+        setAllowedRoleEmployees([])
+      }
+    }
+    loadAllowed()
+  }, [mounted, isAllowed, showUnassigned])
 
   const loadOrCreatePeriod = useCallback(async () => {
     setLoadError(null)
@@ -344,8 +363,14 @@ export default function ManagerEntriesPage() {
     try {
       const upserts = []
 
-      for (const emp of fohEmployees || []) {
-        const row = inputsByEmployeeId?.[emp.id] || { sales_total: '', tips_collected: '', bartender_slot: '' }
+      for (const assignment of shiftAssignments || []) {
+        if (!activeEmployeeIds.includes(assignment.employee_id)) continue
+        const emp = assignment.employees || {}
+        const row = inputsByEmployeeId?.[assignment.employee_id] || {
+          sales_total: '',
+          tips_collected: '',
+          bartender_slot: ''
+        }
         const salesRaw = String(row.sales_total ?? '').trim()
         const tipsRaw = String(row.tips_collected ?? '').trim()
         const slotRaw = String(row.bartender_slot ?? '').trim()
@@ -357,14 +382,14 @@ export default function ManagerEntriesPage() {
           throw new Error(`Enter both sales_total and tips_collected for ${emp.employee_code}.`)
         }
 
-        const sales = asNumber(salesRaw, `sales_total for employee_id=${emp.id}`)
-        const tips = asNumber(tipsRaw, `tips_collected for employee_id=${emp.id}`)
+        const sales = asNumber(salesRaw, `sales_total for employee_id=${assignment.employee_id}`)
+        const tips = asNumber(tipsRaw, `tips_collected for employee_id=${assignment.employee_id}`)
 
         if (sales < 0) throw new Error(`sales_total must be >= 0 for ${emp.employee_code}.`)
         if (tips < 0) throw new Error(`tips_collected must be >= 0 for ${emp.employee_code}.`)
 
         let bartenderSlot = null
-        if (emp.role === 'bartender') {
+        if (assignment.worked_role === 'bartender') {
           if (slotRaw === '') {
             throw new Error(`Bartender slot is required for bartender ${emp.employee_code} (use 1 or 2).`)
           }
@@ -380,8 +405,8 @@ export default function ManagerEntriesPage() {
 
         upserts.push({
           service_period_id: servicePeriodId,
-          employee_id: emp.id,
-          role: emp.role,
+          employee_id: assignment.employee_id,
+          role: assignment.worked_role,
           sales_total: sales,
           tips_collected: tips,
           bartender_slot: bartenderSlot
@@ -408,13 +433,13 @@ export default function ManagerEntriesPage() {
       }
 
       setSaveSuccess('Saved entries.')
-      await loadEntriesForPeriod(servicePeriodId)
+      await loadAssignmentsAndEntries(servicePeriodId)
     } catch (e) {
       setSaveError(e?.message || String(e))
     } finally {
       setIsSaving(false)
     }
-  }, [activePeriod?.id, fohEmployees, inputsByEmployeeId, loadEntriesForPeriod])
+  }, [activePeriod?.id, shiftAssignments, activeEmployeeIds, inputsByEmployeeId, loadAssignmentsAndEntries])
 
   /**
    * Validate bartender slots:
@@ -476,8 +501,14 @@ export default function ManagerEntriesPage() {
       // 1) Build upserts from current inputs (same logic as saveEntries)
       const upserts = []
 
-      for (const emp of fohEmployees || []) {
-        const row = inputsByEmployeeId?.[emp.id] || { sales_total: '', tips_collected: '', bartender_slot: '' }
+      for (const assignment of shiftAssignments || []) {
+        if (!activeEmployeeIds.includes(assignment.employee_id)) continue
+        const emp = assignment.employees || {}
+        const row = inputsByEmployeeId?.[assignment.employee_id] || {
+          sales_total: '',
+          tips_collected: '',
+          bartender_slot: ''
+        }
         const salesRaw = String(row.sales_total ?? '').trim()
         const tipsRaw = String(row.tips_collected ?? '').trim()
         const slotRaw = String(row.bartender_slot ?? '').trim()
@@ -489,14 +520,14 @@ export default function ManagerEntriesPage() {
           throw new Error(`Enter both sales_total and tips_collected for ${emp.employee_code}.`)
         }
 
-        const sales = asNumber(salesRaw, `sales_total for employee_id=${emp.id}`)
-        const tips = asNumber(tipsRaw, `tips_collected for employee_id=${emp.id}`)
+        const sales = asNumber(salesRaw, `sales_total for employee_id=${assignment.employee_id}`)
+        const tips = asNumber(tipsRaw, `tips_collected for employee_id=${assignment.employee_id}`)
 
         if (sales < 0) throw new Error(`sales_total must be >= 0 for ${emp.employee_code}.`)
         if (tips < 0) throw new Error(`tips_collected must be >= 0 for ${emp.employee_code}.`)
 
         let bartenderSlot = null
-        if (emp.role === 'bartender') {
+        if (assignment.worked_role === 'bartender') {
           if (slotRaw === '') {
             throw new Error(`Bartender slot is required for bartender ${emp.employee_code} (use 1 or 2).`)
           }
@@ -511,8 +542,8 @@ export default function ManagerEntriesPage() {
 
         upserts.push({
           service_period_id: servicePeriodId,
-          employee_id: emp.id,
-          role: emp.role,
+          employee_id: assignment.employee_id,
+          role: assignment.worked_role,
           sales_total: sales,
           tips_collected: tips,
           bartender_slot: bartenderSlot
@@ -693,14 +724,164 @@ export default function ManagerEntriesPage() {
       )
 
       // 10) Success - reload stored entries preview
-      await loadEntriesForPeriod(servicePeriodId)
+      await loadAssignmentsAndEntries(servicePeriodId)
       setPublishSuccess('Computed & published. Employees can now see payouts on /dashboard.')
     } catch (e) {
       setPublishError(e?.message || String(e))
     } finally {
       setIsPublishing(false)
     }
-  }, [activePeriod?.id, fohEmployees, inputsByEmployeeId, validateBartenderSlots, loadEntriesForPeriod])
+  }, [
+    activePeriod?.id,
+    shiftAssignments,
+    activeEmployeeIds,
+    inputsByEmployeeId,
+    validateBartenderSlots,
+    loadAssignmentsAndEntries
+  ])
+
+  const activeEmployeeIdSet = useMemo(() => new Set(activeEmployeeIds), [activeEmployeeIds])
+  const entryEmployeeIdSet = useMemo(
+    () => new Set(Object.keys(entriesByEmployeeId || {})),
+    [entriesByEmployeeId]
+  )
+
+  const activeAssignments = useMemo(() => {
+    return (shiftAssignments || []).filter((a) => activeEmployeeIdSet.has(a.employee_id))
+  }, [shiftAssignments, activeEmployeeIdSet])
+
+  const serverAssignments = useMemo(
+    () => activeAssignments.filter((a) => a.worked_role === 'server'),
+    [activeAssignments]
+  )
+
+  const bartenderAssignments = useMemo(
+    () => activeAssignments.filter((a) => a.worked_role === 'bartender'),
+    [activeAssignments]
+  )
+
+  const assignedEmployeeIdSet = useMemo(
+    () => new Set((shiftAssignments || []).map((a) => a.employee_id)),
+    [shiftAssignments]
+  )
+
+  const availableServersToAdd = useMemo(() => {
+    const q = serverSearch.trim().toLowerCase()
+    return (shiftAssignments || [])
+      .filter((a) => a.worked_role === 'server')
+      .filter((a) => !entryEmployeeIdSet.has(a.employee_id))
+      .filter((a) => {
+        if (!q) return true
+        const label = `${a?.employees?.employee_code || ''} ${a?.employees?.display_name || ''}`.toLowerCase()
+        return label.includes(q)
+      })
+  }, [shiftAssignments, activeEmployeeIdSet, serverSearch])
+
+  const availableBartendersToAdd = useMemo(() => {
+    const q = bartenderSearch.trim().toLowerCase()
+    return (shiftAssignments || [])
+      .filter((a) => a.worked_role === 'bartender')
+      .filter((a) => !entryEmployeeIdSet.has(a.employee_id))
+      .filter((a) => {
+        if (!q) return true
+        const label = `${a?.employees?.employee_code || ''} ${a?.employees?.display_name || ''}`.toLowerCase()
+        return label.includes(q)
+      })
+  }, [shiftAssignments, activeEmployeeIdSet, bartenderSearch])
+
+  const availableUnassignedServers = useMemo(() => {
+    const q = unassignedServerSearch.trim().toLowerCase()
+    return (allowedRoleEmployees || [])
+      .filter((r) => r.role === 'server')
+      .map((r) => r.employees)
+      .filter(Boolean)
+      .filter((emp) => !assignedEmployeeIdSet.has(emp.id))
+      .filter((emp) => {
+        if (!q) return true
+        const label = `${emp.employee_code || ''} ${emp.display_name || ''}`.toLowerCase()
+        return label.includes(q)
+      })
+  }, [allowedRoleEmployees, assignedEmployeeIdSet, unassignedServerSearch])
+
+  const availableUnassignedBartenders = useMemo(() => {
+    const q = unassignedBartenderSearch.trim().toLowerCase()
+    return (allowedRoleEmployees || [])
+      .filter((r) => r.role === 'bartender')
+      .map((r) => r.employees)
+      .filter(Boolean)
+      .filter((emp) => !assignedEmployeeIdSet.has(emp.id))
+      .filter((emp) => {
+        if (!q) return true
+        const label = `${emp.employee_code || ''} ${emp.display_name || ''}`.toLowerCase()
+        return label.includes(q)
+      })
+  }, [allowedRoleEmployees, assignedEmployeeIdSet, unassignedBartenderSearch])
+
+  const addAssignedEmployee = useCallback((assignment) => {
+    const employeeId = assignment.employee_id
+    setActiveEmployeeIds((prev) => (prev.includes(employeeId) ? prev : [...prev, employeeId]))
+    setInputsByEmployeeId((prev) => {
+      if (prev[employeeId]) return prev
+      return { ...prev, [employeeId]: { sales_total: '', tips_collected: '', bartender_slot: '' } }
+    })
+    setEntriesByEmployeeId((prev) => {
+      if (prev[employeeId]) return prev
+      return { ...prev, [employeeId]: { employee_id: employeeId } }
+    })
+  }, [])
+
+  const addUnassignedEmployee = useCallback(
+    async (employee, workedRole) => {
+      if (!activePeriod?.id) return
+      setIsAddingUnassigned(true)
+      try {
+        const insertRes = await supabase
+          .from('shift_assignments')
+          .insert({
+            service_period_id: activePeriod.id,
+            employee_id: employee.id,
+            worked_role: workedRole,
+            station: null
+          })
+          .select('id, employee_id, worked_role, station, employees ( id, employee_code, display_name, role )')
+          .single()
+
+        if (insertRes.error) throw insertRes.error
+        const nextAssignment = insertRes.data
+        setShiftAssignments((prev) => {
+          const next = [...(prev || []), nextAssignment]
+          next.sort((a, b) => {
+            const ra = roleSortKey(a.worked_role)
+            const rb = roleSortKey(b.worked_role)
+            if (ra !== rb) return ra.localeCompare(rb)
+            const ca = String(a?.employees?.employee_code || '')
+            const cb = String(b?.employees?.employee_code || '')
+            if (ca !== cb) return ca.localeCompare(cb)
+            return String(a.employee_id || '').localeCompare(String(b.employee_id || ''))
+          })
+          return next
+        })
+        setActiveEmployeeIds((prev) => (prev.includes(nextAssignment.employee_id) ? prev : [...prev, nextAssignment.employee_id]))
+        setInputsByEmployeeId((prev) => ({
+          ...prev,
+          [nextAssignment.employee_id]: prev[nextAssignment.employee_id] || {
+            sales_total: '',
+            tips_collected: '',
+            bartender_slot: ''
+          }
+        }))
+        setEntriesByEmployeeId((prev) => {
+          if (prev[nextAssignment.employee_id]) return prev
+          return { ...prev, [nextAssignment.employee_id]: { employee_id: nextAssignment.employee_id } }
+        })
+      } catch (e) {
+        setLoadError(e?.message || String(e))
+      } finally {
+        setIsAddingUnassigned(false)
+      }
+    },
+    [activePeriod?.id]
+  )
 
   const previewRows = useMemo(() => {
     const entries = Array.isArray(storedEntries) ? storedEntries : []
@@ -810,11 +991,11 @@ export default function ManagerEntriesPage() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={loadFohEmployees}
-                disabled={isBusy}
+                onClick={() => activePeriod?.id && loadAssignmentsAndEntries(activePeriod.id)}
+                disabled={isBusy || !activePeriod?.id}
                 className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isLoadingEmployees ? 'Loading…' : 'Reload employees'}
+                {isLoadingAssignments || isLoadingEntries ? 'Loading…' : 'Reload assignments'}
               </button>
               <button
                 onClick={saveEntries}
@@ -871,92 +1052,308 @@ export default function ManagerEntriesPage() {
 
           {!activePeriod?.id ? (
             <div className="mt-4 text-sm text-zinc-600">Load or create a service period to start entering rows.</div>
-          ) : isLoadingEntries ? (
+          ) : isLoadingEntries || isLoadingAssignments ? (
             <div className="mt-4 text-sm text-zinc-600">Loading existing entries…</div>
-          ) : fohEmployees.length === 0 ? (
-            <div className="mt-4 text-sm text-zinc-600">No active FOH employees found.</div>
+          ) : shiftAssignments.length === 0 ? (
+            <div className="mt-4 text-sm text-zinc-600">No FOH assignments found for this service period.</div>
           ) : (
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-zinc-200 text-left text-xs text-zinc-500">
-                    <th className="py-2 pr-4">Employee</th>
-                    <th className="py-2 pr-4">Role</th>
-                    <th className="py-2 pr-4 text-right">Sales total ($)</th>
-                    <th className="py-2 pr-4 text-right">Tips collected ($)</th>
-                    <th className="py-2 pr-4 text-right">Bartender slot</th>
-                    <th className="py-2 pr-2 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100">
-                  {fohEmployees.map((emp) => {
-                    const row = inputsByEmployeeId?.[emp.id] || { sales_total: '', tips_collected: '', bartender_slot: '' }
-                    const isBartender = emp.role === 'bartender'
-                    return (
-                      <tr key={emp.id}>
-                        <td className="py-3 pr-4">
-                          <div className="font-medium text-zinc-900">{emp.employee_code}</div>
-                          <div className="text-xs text-zinc-500">{emp.display_name || '—'}</div>
-                        </td>
-                        <td className="py-3 pr-4">
-                          <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs text-zinc-700">
-                            {emp.role}
-                          </span>
-                        </td>
-                        <td className="py-3 pr-4 text-right">
-                          <input
-                            type="number"
-                            step="0.01"
-                            inputMode="decimal"
-                            value={row.sales_total}
-                            onChange={(e) => setEmployeeInput(emp.id, { sales_total: e.target.value })}
-                            disabled={isBusy}
-                            className="w-28 rounded-md border border-zinc-300 px-2 py-1 text-sm text-right focus:border-zinc-900 focus:outline-none"
-                            placeholder="0.00"
-                          />
-                        </td>
-                        <td className="py-3 pr-4 text-right">
-                          <input
-                            type="number"
-                            step="0.01"
-                            inputMode="decimal"
-                            value={row.tips_collected}
-                            onChange={(e) => setEmployeeInput(emp.id, { tips_collected: e.target.value })}
-                            disabled={isBusy}
-                            className="w-28 rounded-md border border-zinc-300 px-2 py-1 text-sm text-right focus:border-zinc-900 focus:outline-none"
-                            placeholder="0.00"
-                          />
-                        </td>
-                        <td className="py-3 pr-4 text-right">
-                          {isBartender ? (
-                            <input
-                              type="number"
-                              step="1"
-                              inputMode="numeric"
-                              value={row.bartender_slot}
-                              onChange={(e) => setEmployeeInput(emp.id, { bartender_slot: e.target.value })}
-                              disabled={isBusy}
-                              className="w-20 rounded-md border border-zinc-300 px-2 py-1 text-sm text-right focus:border-zinc-900 focus:outline-none"
-                              placeholder="1 or 2"
-                            />
-                          ) : (
-                            <div className="text-xs text-zinc-400">—</div>
-                          )}
-                        </td>
-                        <td className="py-3 pr-2 text-right">
-                          <button
-                            onClick={() => clearRow(emp.id)}
-                            disabled={isBusy}
-                            className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Clear
-                          </button>
-                        </td>
+            <div className="mt-4 space-y-6">
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm font-semibold">Servers ({serverAssignments.length})</div>
+                  <details className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-700">
+                    <summary className="cursor-pointer select-none font-medium">+ Add server</summary>
+                    <div className="mt-2 space-y-2">
+                      <input
+                        type="text"
+                        value={serverSearch}
+                        onChange={(e) => setServerSearch(e.target.value)}
+                        disabled={isBusy}
+                        className="w-full rounded-md border border-zinc-300 px-2 py-1 text-xs focus:border-zinc-900 focus:outline-none"
+                        placeholder="Search assigned servers…"
+                      />
+                      <div className="max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white">
+                        {availableServersToAdd.length === 0 ? (
+                          <div className="px-2 py-2 text-xs text-zinc-500">All assigned servers are already shown.</div>
+                        ) : (
+                          availableServersToAdd.map((assignment) => (
+                            <button
+                              key={assignment.employee_id}
+                              type="button"
+                              onClick={() => addAssignedEmployee(assignment)}
+                              className="block w-full px-2 py-2 text-left text-xs text-zinc-700 hover:bg-zinc-50"
+                            >
+                              {formatEmployeeLabel(assignment.employees)}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </details>
+                </div>
+                <div className="mt-3 overflow-x-auto">
+                  <table className="min-w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b border-zinc-200 text-left text-xs text-zinc-500">
+                        <th className="py-2 pr-4">Employee</th>
+                        <th className="py-2 pr-4">Role</th>
+                        <th className="py-2 pr-4">Station</th>
+                        <th className="py-2 pr-4 text-right">Sales total ($)</th>
+                        <th className="py-2 pr-4 text-right">Tips collected ($)</th>
+                        <th className="py-2 pr-2 text-right">Actions</th>
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100">
+                      {serverAssignments.map((assignment) => {
+                        const emp = assignment.employees || {}
+                        const row = inputsByEmployeeId?.[assignment.employee_id] || {
+                          sales_total: '',
+                          tips_collected: '',
+                          bartender_slot: ''
+                        }
+                        return (
+                          <tr key={assignment.employee_id}>
+                            <td className="py-3 pr-4">
+                              <div className="font-medium text-zinc-900">{formatEmployeeLabel(emp)}</div>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs text-zinc-700">
+                                server
+                              </span>
+                            </td>
+                            <td className="py-3 pr-4 text-xs text-zinc-500">{assignment.station || '—'}</td>
+                            <td className="py-3 pr-4 text-right">
+                              <input
+                                type="number"
+                                step="0.01"
+                                inputMode="decimal"
+                                value={row.sales_total}
+                                onChange={(e) => setEmployeeInput(assignment.employee_id, { sales_total: e.target.value })}
+                                disabled={isBusy}
+                                className="w-28 rounded-md border border-zinc-300 px-2 py-1 text-sm text-right focus:border-zinc-900 focus:outline-none"
+                                placeholder="0.00"
+                              />
+                            </td>
+                            <td className="py-3 pr-4 text-right">
+                              <input
+                                type="number"
+                                step="0.01"
+                                inputMode="decimal"
+                                value={row.tips_collected}
+                                onChange={(e) =>
+                                  setEmployeeInput(assignment.employee_id, { tips_collected: e.target.value })
+                                }
+                                disabled={isBusy}
+                                className="w-28 rounded-md border border-zinc-300 px-2 py-1 text-sm text-right focus:border-zinc-900 focus:outline-none"
+                                placeholder="0.00"
+                              />
+                            </td>
+                            <td className="py-3 pr-2 text-right">
+                              <button
+                                onClick={() => clearRow(assignment.employee_id)}
+                                disabled={isBusy}
+                                className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Clear
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm font-semibold">Bartenders ({bartenderAssignments.length})</div>
+                  <details className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-700">
+                    <summary className="cursor-pointer select-none font-medium">+ Add bartender</summary>
+                    <div className="mt-2 space-y-2">
+                      <input
+                        type="text"
+                        value={bartenderSearch}
+                        onChange={(e) => setBartenderSearch(e.target.value)}
+                        disabled={isBusy}
+                        className="w-full rounded-md border border-zinc-300 px-2 py-1 text-xs focus:border-zinc-900 focus:outline-none"
+                        placeholder="Search assigned bartenders…"
+                      />
+                      <div className="max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white">
+                        {availableBartendersToAdd.length === 0 ? (
+                          <div className="px-2 py-2 text-xs text-zinc-500">All assigned bartenders are already shown.</div>
+                        ) : (
+                          availableBartendersToAdd.map((assignment) => (
+                            <button
+                              key={assignment.employee_id}
+                              type="button"
+                              onClick={() => addAssignedEmployee(assignment)}
+                              className="block w-full px-2 py-2 text-left text-xs text-zinc-700 hover:bg-zinc-50"
+                            >
+                              {formatEmployeeLabel(assignment.employees)}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </details>
+                </div>
+                <div className="mt-3 overflow-x-auto">
+                  <table className="min-w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b border-zinc-200 text-left text-xs text-zinc-500">
+                        <th className="py-2 pr-4">Employee</th>
+                        <th className="py-2 pr-4">Role</th>
+                        <th className="py-2 pr-4">Station</th>
+                        <th className="py-2 pr-4 text-right">Sales total ($)</th>
+                        <th className="py-2 pr-4 text-right">Tips collected ($)</th>
+                        <th className="py-2 pr-4 text-right">Bartender slot</th>
+                        <th className="py-2 pr-2 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100">
+                      {bartenderAssignments.map((assignment) => {
+                        const emp = assignment.employees || {}
+                        const row = inputsByEmployeeId?.[assignment.employee_id] || {
+                          sales_total: '',
+                          tips_collected: '',
+                          bartender_slot: ''
+                        }
+                        return (
+                          <tr key={assignment.employee_id}>
+                            <td className="py-3 pr-4">
+                              <div className="font-medium text-zinc-900">{formatEmployeeLabel(emp)}</div>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs text-zinc-700">
+                                bartender
+                              </span>
+                            </td>
+                            <td className="py-3 pr-4 text-xs text-zinc-500">{assignment.station || '—'}</td>
+                            <td className="py-3 pr-4 text-right">
+                              <input
+                                type="number"
+                                step="0.01"
+                                inputMode="decimal"
+                                value={row.sales_total}
+                                onChange={(e) => setEmployeeInput(assignment.employee_id, { sales_total: e.target.value })}
+                                disabled={isBusy}
+                                className="w-28 rounded-md border border-zinc-300 px-2 py-1 text-sm text-right focus:border-zinc-900 focus:outline-none"
+                                placeholder="0.00"
+                              />
+                            </td>
+                            <td className="py-3 pr-4 text-right">
+                              <input
+                                type="number"
+                                step="0.01"
+                                inputMode="decimal"
+                                value={row.tips_collected}
+                                onChange={(e) =>
+                                  setEmployeeInput(assignment.employee_id, { tips_collected: e.target.value })
+                                }
+                                disabled={isBusy}
+                                className="w-28 rounded-md border border-zinc-300 px-2 py-1 text-sm text-right focus:border-zinc-900 focus:outline-none"
+                                placeholder="0.00"
+                              />
+                            </td>
+                            <td className="py-3 pr-4 text-right">
+                              <input
+                                type="number"
+                                step="1"
+                                inputMode="numeric"
+                                value={row.bartender_slot}
+                                onChange={(e) =>
+                                  setEmployeeInput(assignment.employee_id, { bartender_slot: e.target.value })
+                                }
+                                disabled={isBusy}
+                                className="w-20 rounded-md border border-zinc-300 px-2 py-1 text-sm text-right focus:border-zinc-900 focus:outline-none"
+                                placeholder="1 or 2"
+                              />
+                            </td>
+                            <td className="py-3 pr-2 text-right">
+                              <button
+                                onClick={() => clearRow(assignment.employee_id)}
+                                disabled={isBusy}
+                                className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Clear
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-dashed border-zinc-200 px-3 py-2 text-xs text-zinc-600">
+                <button
+                  type="button"
+                  onClick={() => setShowUnassigned((prev) => !prev)}
+                  className="font-medium text-zinc-900 hover:text-zinc-700"
+                >
+                  {showUnassigned ? 'Hide' : 'Add unassigned staff'}
+                </button>
+                {showUnassigned ? (
+                  <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <div className="text-xs font-semibold text-zinc-700">Unassigned servers</div>
+                      <input
+                        type="text"
+                        value={unassignedServerSearch}
+                        onChange={(e) => setUnassignedServerSearch(e.target.value)}
+                        disabled={isBusy}
+                        className="mt-2 w-full rounded-md border border-zinc-300 px-2 py-1 text-xs focus:border-zinc-900 focus:outline-none"
+                        placeholder="Search allowed servers…"
+                      />
+                      <div className="mt-2 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white">
+                        {availableUnassignedServers.length === 0 ? (
+                          <div className="px-2 py-2 text-xs text-zinc-500">No eligible unassigned servers.</div>
+                        ) : (
+                          availableUnassignedServers.map((emp) => (
+                            <button
+                              key={emp.id}
+                              type="button"
+                              onClick={() => addUnassignedEmployee(emp, 'server')}
+                              className="block w-full px-2 py-2 text-left text-xs text-zinc-700 hover:bg-zinc-50"
+                            >
+                              {formatEmployeeLabel(emp)}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-zinc-700">Unassigned bartenders</div>
+                      <input
+                        type="text"
+                        value={unassignedBartenderSearch}
+                        onChange={(e) => setUnassignedBartenderSearch(e.target.value)}
+                        disabled={isBusy}
+                        className="mt-2 w-full rounded-md border border-zinc-300 px-2 py-1 text-xs focus:border-zinc-900 focus:outline-none"
+                        placeholder="Search allowed bartenders…"
+                      />
+                      <div className="mt-2 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white">
+                        {availableUnassignedBartenders.length === 0 ? (
+                          <div className="px-2 py-2 text-xs text-zinc-500">No eligible unassigned bartenders.</div>
+                        ) : (
+                          availableUnassignedBartenders.map((emp) => (
+                            <button
+                              key={emp.id}
+                              type="button"
+                              onClick={() => addUnassignedEmployee(emp, 'bartender')}
+                              className="block w-full px-2 py-2 text-left text-xs text-zinc-700 hover:bg-zinc-50"
+                            >
+                              {formatEmployeeLabel(emp)}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
           )}
         </div>
@@ -969,11 +1366,11 @@ export default function ManagerEntriesPage() {
                 <div className="mt-1 text-xs text-zinc-500">What is currently stored for this service period.</div>
               </div>
               <button
-                onClick={() => loadEntriesForPeriod(activePeriod.id)}
+                onClick={() => loadAssignmentsAndEntries(activePeriod.id)}
                 disabled={isBusy}
                 className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isLoadingEntries ? 'Loading…' : 'Reload preview'}
+                {isLoadingEntries || isLoadingAssignments ? 'Loading…' : 'Reload preview'}
               </button>
             </div>
 
