@@ -32,7 +32,6 @@ export default function AppHeader({ title, subtitle }) {
         { href: '/manager/entries', label: 'Entries' },
         { href: '/manager/summary', label: 'Summary' },
         { href: '/dashboard', label: 'Dashboard' },
-        { href: '/manager/compute', label: 'Compute' },
         { href: '/manager/kitchen-hours', label: 'Kitchen hours' },
         { href: '/manager/kitchen-weekly', label: 'Kitchen weekly' }
       ]

@@ -721,7 +721,7 @@ export default function ManagerEntriesPage() {
   if (!mounted || !isAllowed) {
     return (
       <div className="min-h-screen bg-zinc-50 text-zinc-900">
-        <AppHeader title="Manager" subtitle="Service period entries" />
+        <AppHeader title="Manager" subtitle="Enter entries and compute payouts" />
         <div className="mx-auto max-w-5xl px-4 py-10 text-sm text-zinc-600">Checking access…</div>
       </div>
     )
@@ -729,7 +729,7 @@ export default function ManagerEntriesPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <AppHeader title="Manager" subtitle="Service period entries" />
+      <AppHeader title="Manager" subtitle="Enter entries and compute payouts" />
 
       <main className="mx-auto max-w-5xl px-4 py-6 space-y-6">
         <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">

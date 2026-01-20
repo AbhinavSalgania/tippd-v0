@@ -241,7 +241,7 @@ export default function ManagerKitchenWeeklyPage() {
           .map((p) => formatPeriodLabel(p))
           .join(', ')
         setComputeError(
-          `Missing service_period_totals for ${missingTotals.length} service period(s): ${missingLabels}. Run /manager/compute for those periods first.`
+          `Missing service_period_totals for ${missingTotals.length} service period(s): ${missingLabels}. Go to Entries and compute payouts for those periods first.`
         )
         return
       }

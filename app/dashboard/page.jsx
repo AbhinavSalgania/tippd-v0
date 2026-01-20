@@ -670,17 +670,7 @@ export default function DashboardPage() {
                 >
                   <div className="text-sm font-semibold text-zinc-900">Entries</div>
                   <div className="mt-1 text-xs text-zinc-600">
-                    Enter sales and tips for servers and bartenders
-                  </div>
-                </a>
-                
-                <a
-                  href="/manager/compute"
-                  className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 hover:border-zinc-300 hover:bg-zinc-100 transition-colors"
-                >
-                  <div className="text-sm font-semibold text-zinc-900">Compute</div>
-                  <div className="mt-1 text-xs text-zinc-600">
-                    Calculate tip distributions for a service period
+                    Enter sales and tips, then compute payouts for service periods
                   </div>
                 </a>
                 

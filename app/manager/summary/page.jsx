@@ -117,7 +117,7 @@ export default function ManagerSummaryPage() {
       const periods = Array.isArray(spRes.data) ? spRes.data : []
 
       if (periods.length === 0) {
-        setError('No service periods found for this date. Create service periods and run /manager/compute first.')
+        setError('No service periods found for this date. Create service periods and compute payouts in Entries first.')
         return
       }
 
