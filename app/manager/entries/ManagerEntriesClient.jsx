@@ -82,10 +82,9 @@ export default function ManagerEntriesPage() {
 
   const [shiftAssignments, setShiftAssignments] = useState([])
   const [activeEmployeeIds, setActiveEmployeeIds] = useState([])
-  const [entriesByEmployeeId, setEntriesByEmployeeId] = useState({})
 
   // inputsByEmployeeId:
-  // { [employeeId]: { sales_total: string, tips_collected: string, bartender_slot: string } }
+  // { [employeeId]: { sales_total: string, tips_collected: string } }
   const [inputsByEmployeeId, setInputsByEmployeeId] = useState({})
 
   const [storedEntries, setStoredEntries] = useState([])
@@ -103,8 +102,6 @@ export default function ManagerEntriesPage() {
   const [publishError, setPublishError] = useState(null)
   const [publishSuccess, setPublishSuccess] = useState(null)
 
-  const [serverSearch, setServerSearch] = useState('')
-  const [bartenderSearch, setBartenderSearch] = useState('')
   const [showUnassigned, setShowUnassigned] = useState(false)
   const [unassignedServerSearch, setUnassignedServerSearch] = useState('')
   const [unassignedBartenderSearch, setUnassignedBartenderSearch] = useState('')
@@ -139,14 +136,14 @@ export default function ManagerEntriesPage() {
   const setEmployeeInput = useCallback((employeeId, patch) => {
     setInputsByEmployeeId((prev) => ({
       ...prev,
-      [employeeId]: { ...(prev[employeeId] || { sales_total: '', tips_collected: '', bartender_slot: '' }), ...patch }
+      [employeeId]: { ...(prev[employeeId] || { sales_total: '', tips_collected: '' }), ...patch }
     }))
   }, [])
 
   const clearRow = useCallback((employeeId) => {
     setInputsByEmployeeId((prev) => ({
       ...prev,
-      [employeeId]: { sales_total: '', tips_collected: '', bartender_slot: '' }
+      [employeeId]: { sales_total: '', tips_collected: '' }
     }))
   }, [])
 
@@ -232,13 +229,12 @@ export default function ManagerEntriesPage() {
         if (e?.employee_id) entryByEmployeeId[e.employee_id] = e
       }
 
-      setEntriesByEmployeeId(entryByEmployeeId)
       setStoredEntries(entries)
       setShiftAssignments(assignments)
       setActiveEmployeeIds(assignments.map((a) => a.employee_id))
 
       setInputsByEmployeeId((prev) => {
-        /** @type {Record<string, { sales_total:string, tips_collected:string, bartender_slot:string }>} */
+        /** @type {Record<string, { sales_total:string, tips_collected:string }>} */
         const next = {}
 
         for (const assignment of assignments || []) {
@@ -246,8 +242,7 @@ export default function ManagerEntriesPage() {
           const existing = entryByEmployeeId[employeeId]
           next[employeeId] = {
             sales_total: existing?.sales_total != null ? String(existing.sales_total) : '',
-            tips_collected: existing?.tips_collected != null ? String(existing.tips_collected) : '',
-            bartender_slot: existing?.bartender_slot != null ? String(existing.bartender_slot) : ''
+            tips_collected: existing?.tips_collected != null ? String(existing.tips_collected) : ''
           }
         }
 
@@ -262,7 +257,6 @@ export default function ManagerEntriesPage() {
       setStoredEntries([])
       setShiftAssignments([])
       setActiveEmployeeIds([])
-      setEntriesByEmployeeId({})
     } finally {
       setIsLoadingAssignments(false)
       setIsLoadingEntries(false)
@@ -361,6 +355,10 @@ export default function ManagerEntriesPage() {
 
     setIsSaving(true)
     try {
+      const bartenderCount = (shiftAssignments || []).filter(
+        (assignment) => assignment.worked_role === 'bartender'
+      ).length
+      const bartenderSlotValue = bartenderCount >= 2 ? 2 : 1
       const upserts = []
 
       for (const assignment of shiftAssignments || []) {
@@ -368,14 +366,12 @@ export default function ManagerEntriesPage() {
         const emp = assignment.employees || {}
         const row = inputsByEmployeeId?.[assignment.employee_id] || {
           sales_total: '',
-          tips_collected: '',
-          bartender_slot: ''
+          tips_collected: ''
         }
         const salesRaw = String(row.sales_total ?? '').trim()
         const tipsRaw = String(row.tips_collected ?? '').trim()
-        const slotRaw = String(row.bartender_slot ?? '').trim()
 
-        const hasAny = salesRaw !== '' || tipsRaw !== '' || slotRaw !== ''
+        const hasAny = salesRaw !== '' || tipsRaw !== ''
         if (!hasAny) continue
 
         if (salesRaw === '' || tipsRaw === '') {
@@ -388,28 +384,13 @@ export default function ManagerEntriesPage() {
         if (sales < 0) throw new Error(`sales_total must be >= 0 for ${emp.employee_code}.`)
         if (tips < 0) throw new Error(`tips_collected must be >= 0 for ${emp.employee_code}.`)
 
-        let bartenderSlot = null
-        if (assignment.worked_role === 'bartender') {
-          if (slotRaw === '') {
-            throw new Error(`Bartender slot is required for bartender ${emp.employee_code} (use 1 or 2).`)
-          }
-          const parsed = Number(slotRaw)
-          if (!Number.isInteger(parsed) || (parsed !== 1 && parsed !== 2)) {
-            throw new Error(`bartender_slot must be 1 or 2 for bartender ${emp.employee_code}.`)
-          }
-          bartenderSlot = parsed
-        } else {
-          // Server: ignore any typed slot.
-          bartenderSlot = null
-        }
-
         upserts.push({
           service_period_id: servicePeriodId,
           employee_id: assignment.employee_id,
           role: assignment.worked_role,
           sales_total: sales,
           tips_collected: tips,
-          bartender_slot: bartenderSlot
+          bartender_slot: bartenderSlotValue
         })
       }
 
@@ -442,45 +423,6 @@ export default function ManagerEntriesPage() {
   }, [activePeriod?.id, shiftAssignments, activeEmployeeIds, inputsByEmployeeId, loadAssignmentsAndEntries])
 
   /**
-   * Validate bartender slots:
-   * - Each bartender must have slot 1 or 2
-   * - No duplicate slots
-   * - Cannot have slot 2 without slot 1
-   */
-  const validateBartenderSlots = useCallback((upserts) => {
-    const bartenders = upserts.filter((u) => u.role === 'bartender')
-    if (bartenders.length === 0) {
-      return { valid: false, error: 'At least one bartender is required.' }
-    }
-
-    const slots = bartenders.map((b) => b.bartender_slot)
-    const slot1Count = slots.filter((s) => s === 1).length
-    const slot2Count = slots.filter((s) => s === 2).length
-
-    // Check for duplicates
-    if (slot1Count > 1) {
-      return { valid: false, error: 'Multiple bartenders have slot 1. Only one bartender can be slot 1.' }
-    }
-    if (slot2Count > 1) {
-      return { valid: false, error: 'Multiple bartenders have slot 2. Only one bartender can be slot 2.' }
-    }
-
-    // Check slot 2 without slot 1
-    if (slot2Count > 0 && slot1Count === 0) {
-      return { valid: false, error: 'Cannot have bartender slot 2 without a bartender in slot 1.' }
-    }
-
-    // Ensure every bartender has a valid slot
-    for (const b of bartenders) {
-      if (b.bartender_slot !== 1 && b.bartender_slot !== 2) {
-        return { valid: false, error: `Bartender must have slot 1 or 2.` }
-      }
-    }
-
-    return { valid: true, error: null }
-  }, [])
-
-  /**
    * Compute & Publish: saves entries first (if needed), then computes payouts and persists them.
    * Employees can see results on /dashboard immediately after.
    */
@@ -498,6 +440,14 @@ export default function ManagerEntriesPage() {
 
     setIsPublishing(true)
     try {
+      const bartenderCount = (shiftAssignments || []).filter(
+        (assignment) => assignment.worked_role === 'bartender'
+      ).length
+      const bartenderSlotValue = bartenderCount >= 2 ? 2 : 1
+      if (bartenderCount !== 1 && bartenderCount !== 2) {
+        setPublishError(`Expected 1 or 2 bartenders assigned, but found ${bartenderCount}.`)
+        return
+      }
       // 1) Build upserts from current inputs (same logic as saveEntries)
       const upserts = []
 
@@ -506,14 +456,12 @@ export default function ManagerEntriesPage() {
         const emp = assignment.employees || {}
         const row = inputsByEmployeeId?.[assignment.employee_id] || {
           sales_total: '',
-          tips_collected: '',
-          bartender_slot: ''
+          tips_collected: ''
         }
         const salesRaw = String(row.sales_total ?? '').trim()
         const tipsRaw = String(row.tips_collected ?? '').trim()
-        const slotRaw = String(row.bartender_slot ?? '').trim()
 
-        const hasAny = salesRaw !== '' || tipsRaw !== '' || slotRaw !== ''
+        const hasAny = salesRaw !== '' || tipsRaw !== ''
         if (!hasAny) continue
 
         if (salesRaw === '' || tipsRaw === '') {
@@ -526,27 +474,13 @@ export default function ManagerEntriesPage() {
         if (sales < 0) throw new Error(`sales_total must be >= 0 for ${emp.employee_code}.`)
         if (tips < 0) throw new Error(`tips_collected must be >= 0 for ${emp.employee_code}.`)
 
-        let bartenderSlot = null
-        if (assignment.worked_role === 'bartender') {
-          if (slotRaw === '') {
-            throw new Error(`Bartender slot is required for bartender ${emp.employee_code} (use 1 or 2).`)
-          }
-          const parsed = Number(slotRaw)
-          if (!Number.isInteger(parsed) || (parsed !== 1 && parsed !== 2)) {
-            throw new Error(`bartender_slot must be 1 or 2 for bartender ${emp.employee_code}.`)
-          }
-          bartenderSlot = parsed
-        } else {
-          bartenderSlot = null
-        }
-
         upserts.push({
           service_period_id: servicePeriodId,
           employee_id: assignment.employee_id,
           role: assignment.worked_role,
           sales_total: sales,
           tips_collected: tips,
-          bartender_slot: bartenderSlot
+          bartender_slot: bartenderSlotValue
         })
       }
 
@@ -555,14 +489,7 @@ export default function ManagerEntriesPage() {
         return
       }
 
-      // 2) Validate bartender slots
-      const slotValidation = validateBartenderSlots(upserts)
-      if (!slotValidation.valid) {
-        setPublishError(slotValidation.error)
-        return
-      }
-
-      // 3) Save entries first
+      // 2) Save entries first
       const upsertRes = await supabase
         .from('service_period_entries')
         .upsert(upserts, { onConflict: 'service_period_id,employee_id' })
@@ -577,7 +504,7 @@ export default function ManagerEntriesPage() {
         throw upsertRes.error
       }
 
-      // 4) Fetch entries back with employee info for compute
+      // 3) Fetch entries back with employee info for compute
       /** @type {Array<any>} */
       let entries = []
       /** @type {Record<string, { employee_code?: string, display_name?: string }>} */
@@ -634,7 +561,7 @@ export default function ManagerEntriesPage() {
         return
       }
 
-      // 5) Build engine input workers[]
+      // 4) Build engine input workers[]
       const workers = entries.map((r) => {
         const employeeId = r.employee_id
         return {
@@ -645,7 +572,7 @@ export default function ManagerEntriesPage() {
         }
       })
 
-      // 6) Compute payouts
+      // 5) Compute payouts
       const engine = calculateServicePeriodPayouts({
         servicePeriodId,
         workers
@@ -656,7 +583,7 @@ export default function ManagerEntriesPage() {
         return
       }
 
-      // 7) Persist derived totals
+      // 6) Persist derived totals
       {
         const { error } = await supabase
           .from('service_period_totals')
@@ -671,7 +598,7 @@ export default function ManagerEntriesPage() {
         if (error) throw error
       }
 
-      // 8) Persist payouts (upsert, get back IDs)
+      // 7) Persist payouts (upsert, get back IDs)
       const payoutUpserts = (engine.payoutsByWorker || []).map((p) => ({
         service_period_id: servicePeriodId,
         employee_id: p.employeeId,
@@ -697,7 +624,7 @@ export default function ManagerEntriesPage() {
         if (row?.employee_id && row?.id) payoutIdByEmployeeId[row.employee_id] = row.id
       }
 
-      // 9) Replace payout_line_items for each payout (delete then insert)
+      // 8) Replace payout_line_items for each payout (delete then insert)
       const payoutsByWorker = Array.isArray(engine.payoutsByWorker) ? engine.payoutsByWorker : []
       await Promise.all(
         payoutsByWorker.map(async (p) => {
@@ -723,7 +650,7 @@ export default function ManagerEntriesPage() {
         })
       )
 
-      // 10) Success - reload stored entries preview
+      // 9) Success - reload stored entries preview
       await loadAssignmentsAndEntries(servicePeriodId)
       setPublishSuccess('Computed & published. Employees can now see payouts on /dashboard.')
     } catch (e) {
@@ -736,16 +663,10 @@ export default function ManagerEntriesPage() {
     shiftAssignments,
     activeEmployeeIds,
     inputsByEmployeeId,
-    validateBartenderSlots,
     loadAssignmentsAndEntries
   ])
 
   const activeEmployeeIdSet = useMemo(() => new Set(activeEmployeeIds), [activeEmployeeIds])
-  const entryEmployeeIdSet = useMemo(
-    () => new Set(Object.keys(entriesByEmployeeId || {})),
-    [entriesByEmployeeId]
-  )
-
   const activeAssignments = useMemo(() => {
     return (shiftAssignments || []).filter((a) => activeEmployeeIdSet.has(a.employee_id))
   }, [shiftAssignments, activeEmployeeIdSet])
@@ -764,30 +685,6 @@ export default function ManagerEntriesPage() {
     () => new Set((shiftAssignments || []).map((a) => a.employee_id)),
     [shiftAssignments]
   )
-
-  const availableServersToAdd = useMemo(() => {
-    const q = serverSearch.trim().toLowerCase()
-    return (shiftAssignments || [])
-      .filter((a) => a.worked_role === 'server')
-      .filter((a) => !entryEmployeeIdSet.has(a.employee_id))
-      .filter((a) => {
-        if (!q) return true
-        const label = `${a?.employees?.employee_code || ''} ${a?.employees?.display_name || ''}`.toLowerCase()
-        return label.includes(q)
-      })
-  }, [shiftAssignments, activeEmployeeIdSet, serverSearch])
-
-  const availableBartendersToAdd = useMemo(() => {
-    const q = bartenderSearch.trim().toLowerCase()
-    return (shiftAssignments || [])
-      .filter((a) => a.worked_role === 'bartender')
-      .filter((a) => !entryEmployeeIdSet.has(a.employee_id))
-      .filter((a) => {
-        if (!q) return true
-        const label = `${a?.employees?.employee_code || ''} ${a?.employees?.display_name || ''}`.toLowerCase()
-        return label.includes(q)
-      })
-  }, [shiftAssignments, activeEmployeeIdSet, bartenderSearch])
 
   const availableUnassignedServers = useMemo(() => {
     const q = unassignedServerSearch.trim().toLowerCase()
@@ -816,19 +713,6 @@ export default function ManagerEntriesPage() {
         return label.includes(q)
       })
   }, [allowedRoleEmployees, assignedEmployeeIdSet, unassignedBartenderSearch])
-
-  const addAssignedEmployee = useCallback((assignment) => {
-    const employeeId = assignment.employee_id
-    setActiveEmployeeIds((prev) => (prev.includes(employeeId) ? prev : [...prev, employeeId]))
-    setInputsByEmployeeId((prev) => {
-      if (prev[employeeId]) return prev
-      return { ...prev, [employeeId]: { sales_total: '', tips_collected: '', bartender_slot: '' } }
-    })
-    setEntriesByEmployeeId((prev) => {
-      if (prev[employeeId]) return prev
-      return { ...prev, [employeeId]: { employee_id: employeeId } }
-    })
-  }, [])
 
   const addUnassignedEmployee = useCallback(
     async (employee, workedRole) => {
@@ -866,14 +750,9 @@ export default function ManagerEntriesPage() {
           ...prev,
           [nextAssignment.employee_id]: prev[nextAssignment.employee_id] || {
             sales_total: '',
-            tips_collected: '',
-            bartender_slot: ''
+            tips_collected: ''
           }
         }))
-        setEntriesByEmployeeId((prev) => {
-          if (prev[nextAssignment.employee_id]) return prev
-          return { ...prev, [nextAssignment.employee_id]: { employee_id: nextAssignment.employee_id } }
-        })
       } catch (e) {
         setLoadError(e?.message || String(e))
       } finally {
@@ -893,8 +772,7 @@ export default function ManagerEntriesPage() {
         display_name: emp.display_name || '',
         role: e.role || emp.role || '',
         sales_total: e.sales_total,
-        tips_collected: e.tips_collected,
-        bartender_slot: e.bartender_slot
+        tips_collected: e.tips_collected
       }
     })
   }, [storedEntries])
@@ -984,9 +862,6 @@ export default function ManagerEntriesPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-sm font-semibold">FOH entries</div>
-              <div className="mt-1 text-xs text-zinc-500">
-                For this restaurant, <span className="font-medium">bartender_slot</span> should be 1 or 2 for bartenders.
-              </div>
             </div>
 
             <div className="flex items-center gap-2">
@@ -1061,35 +936,6 @@ export default function ManagerEntriesPage() {
               <div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="text-sm font-semibold">Servers ({serverAssignments.length})</div>
-                  <details className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-700">
-                    <summary className="cursor-pointer select-none font-medium">+ Add server</summary>
-                    <div className="mt-2 space-y-2">
-                      <input
-                        type="text"
-                        value={serverSearch}
-                        onChange={(e) => setServerSearch(e.target.value)}
-                        disabled={isBusy}
-                        className="w-full rounded-md border border-zinc-300 px-2 py-1 text-xs focus:border-zinc-900 focus:outline-none"
-                        placeholder="Search assigned servers…"
-                      />
-                      <div className="max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white">
-                        {availableServersToAdd.length === 0 ? (
-                          <div className="px-2 py-2 text-xs text-zinc-500">All assigned servers are already shown.</div>
-                        ) : (
-                          availableServersToAdd.map((assignment) => (
-                            <button
-                              key={assignment.employee_id}
-                              type="button"
-                              onClick={() => addAssignedEmployee(assignment)}
-                              className="block w-full px-2 py-2 text-left text-xs text-zinc-700 hover:bg-zinc-50"
-                            >
-                              {formatEmployeeLabel(assignment.employees)}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </details>
                 </div>
                 <div className="mt-3 overflow-x-auto">
                   <table className="min-w-full border-collapse text-sm">
@@ -1108,8 +954,7 @@ export default function ManagerEntriesPage() {
                         const emp = assignment.employees || {}
                         const row = inputsByEmployeeId?.[assignment.employee_id] || {
                           sales_total: '',
-                          tips_collected: '',
-                          bartender_slot: ''
+                          tips_collected: ''
                         }
                         return (
                           <tr key={assignment.employee_id}>
@@ -1168,35 +1013,6 @@ export default function ManagerEntriesPage() {
               <div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="text-sm font-semibold">Bartenders ({bartenderAssignments.length})</div>
-                  <details className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-700">
-                    <summary className="cursor-pointer select-none font-medium">+ Add bartender</summary>
-                    <div className="mt-2 space-y-2">
-                      <input
-                        type="text"
-                        value={bartenderSearch}
-                        onChange={(e) => setBartenderSearch(e.target.value)}
-                        disabled={isBusy}
-                        className="w-full rounded-md border border-zinc-300 px-2 py-1 text-xs focus:border-zinc-900 focus:outline-none"
-                        placeholder="Search assigned bartenders…"
-                      />
-                      <div className="max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white">
-                        {availableBartendersToAdd.length === 0 ? (
-                          <div className="px-2 py-2 text-xs text-zinc-500">All assigned bartenders are already shown.</div>
-                        ) : (
-                          availableBartendersToAdd.map((assignment) => (
-                            <button
-                              key={assignment.employee_id}
-                              type="button"
-                              onClick={() => addAssignedEmployee(assignment)}
-                              className="block w-full px-2 py-2 text-left text-xs text-zinc-700 hover:bg-zinc-50"
-                            >
-                              {formatEmployeeLabel(assignment.employees)}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </details>
                 </div>
                 <div className="mt-3 overflow-x-auto">
                   <table className="min-w-full border-collapse text-sm">
@@ -1207,7 +1023,6 @@ export default function ManagerEntriesPage() {
                         <th className="py-2 pr-4">Station</th>
                         <th className="py-2 pr-4 text-right">Sales total ($)</th>
                         <th className="py-2 pr-4 text-right">Tips collected ($)</th>
-                        <th className="py-2 pr-4 text-right">Bartender slot</th>
                         <th className="py-2 pr-2 text-right">Actions</th>
                       </tr>
                     </thead>
@@ -1216,8 +1031,7 @@ export default function ManagerEntriesPage() {
                         const emp = assignment.employees || {}
                         const row = inputsByEmployeeId?.[assignment.employee_id] || {
                           sales_total: '',
-                          tips_collected: '',
-                          bartender_slot: ''
+                          tips_collected: ''
                         }
                         return (
                           <tr key={assignment.employee_id}>
@@ -1254,20 +1068,6 @@ export default function ManagerEntriesPage() {
                                 disabled={isBusy}
                                 className="w-28 rounded-md border border-zinc-300 px-2 py-1 text-sm text-right focus:border-zinc-900 focus:outline-none"
                                 placeholder="0.00"
-                              />
-                            </td>
-                            <td className="py-3 pr-4 text-right">
-                              <input
-                                type="number"
-                                step="1"
-                                inputMode="numeric"
-                                value={row.bartender_slot}
-                                onChange={(e) =>
-                                  setEmployeeInput(assignment.employee_id, { bartender_slot: e.target.value })
-                                }
-                                disabled={isBusy}
-                                className="w-20 rounded-md border border-zinc-300 px-2 py-1 text-sm text-right focus:border-zinc-900 focus:outline-none"
-                                placeholder="1 or 2"
                               />
                             </td>
                             <td className="py-3 pr-2 text-right">
@@ -1387,7 +1187,6 @@ export default function ManagerEntriesPage() {
                       <th className="py-2 pr-4">Role</th>
                       <th className="py-2 pr-4 text-right">Sales total</th>
                       <th className="py-2 pr-4 text-right">Tips collected</th>
-                      <th className="py-2 pr-2 text-right">Bartender slot</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
@@ -1404,9 +1203,6 @@ export default function ManagerEntriesPage() {
                         </td>
                         <td className="py-2 pr-4 text-right text-zinc-900">{formatMoney(r.sales_total)}</td>
                         <td className="py-2 pr-4 text-right text-zinc-900">{formatMoney(r.tips_collected)}</td>
-                        <td className="py-2 pr-2 text-right text-zinc-900">
-                          {r.bartender_slot != null ? String(r.bartender_slot) : '—'}
-                        </td>
                       </tr>
                     ))}
                   </tbody>

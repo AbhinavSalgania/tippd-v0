@@ -151,6 +151,123 @@ values
   ((select id from sp where period_date = '2026-01-18'::date and period_type = 'dinner'), (select id from e where employee_code = 'B005'), 'server', 'Dining'),
   ((select id from sp where period_date = '2026-01-18'::date and period_type = 'dinner'), (select id from e where employee_code = 'B002'), 'bartender', 'Bar 1');
 
+truncate table
+  public.service_period_entries,
+  public.service_period_totals,
+  public.service_period_payouts,
+  public.payout_line_items
+restart identity;
+
+with
+  foh_assignments as (
+    select
+      sa.service_period_id,
+      sa.employee_id,
+      sa.worked_role,
+      sa.station,
+      e.employee_code
+    from public.shift_assignments sa
+    join public.service_periods sp on sp.id = sa.service_period_id
+    join public.employees e on e.id = sa.employee_id
+    where sa.worked_role in ('server', 'bartender')
+  ),
+  bartender_counts as (
+    select service_period_id, count(*) as bartender_count
+    from public.shift_assignments
+    where worked_role = 'bartender'
+    group by service_period_id
+  ),
+  seeded as (
+    select
+      foh_assignments.*,
+      ('x' || substr(md5(foh_assignments.employee_id::text || foh_assignments.service_period_id::text), 1, 8))::bit(32)::int as seed_sales,
+      ('x' || substr(md5(foh_assignments.employee_id::text || foh_assignments.service_period_id::text), 9, 8))::bit(32)::int as seed_tip
+    from foh_assignments
+  ),
+  randomized as (
+    select
+      seeded.*,
+      ((seed_sales::bigint + 2147483648)::numeric / 4294967295) as sales_rand,
+      ((seed_tip::bigint + 2147483648)::numeric / 4294967295) as tip_rand
+    from seeded
+  ),
+  sales_ranges as (
+    select
+      randomized.*,
+      case
+        when worked_role = 'bartender' then 600
+        when worked_role = 'server' and station ilike '%Dining%' then 400
+        when worked_role = 'server' and station ilike '%Patio%' then 300
+        else 400
+      end as sales_min,
+      case
+        when worked_role = 'bartender' then 1000
+        when worked_role = 'server' and station ilike '%Dining%' then 1200
+        when worked_role = 'server' and station ilike '%Patio%' then 900
+        else 1000
+      end as sales_max
+    from randomized
+  ),
+  sales_calc as (
+    select
+      sales_ranges.*,
+      (sales_min + (sales_max - sales_min) * sales_rand) as sales_dollars
+    from sales_ranges
+  ),
+  tip_base as (
+    select
+      sales_calc.*,
+      case
+        when worked_role = 'bartender' then 0.20
+        when employee_code in ('S001', 'S003', 'S007') then 0.21
+        when employee_code in ('S002', 'S005', 'S008') then 0.20
+        when employee_code in ('S004', 'S006', 'S009', 'S010') then 0.19
+        when employee_code in ('S011') then 0.185
+        else 0.19
+      end as base_tip_pct
+    from sales_calc
+  ),
+  tip_calc as (
+    select
+      tip_base.*,
+      case
+        when sales_dollars < 600 then 0.010
+        when sales_dollars <= 900 then 0.003
+        else -0.005
+      end as sales_tip_adj,
+      (tip_rand * 0.03 - 0.015) as noise_tip_adj
+    from tip_base
+  ),
+  final_entries as (
+    select
+      tip_calc.service_period_id,
+      tip_calc.employee_id,
+      tip_calc.worked_role as role,
+      round(tip_calc.sales_dollars * 100)::int as sales_total_cents,
+      greatest(
+        0.17,
+        least(0.23, tip_calc.base_tip_pct + tip_calc.sales_tip_adj + tip_calc.noise_tip_adj)
+      ) as tip_pct
+    from tip_calc
+  )
+insert into public.service_period_entries (
+  service_period_id,
+  employee_id,
+  role,
+  sales_total_cents,
+  tips_collected_cents,
+  bartender_slot
+)
+select
+  final_entries.service_period_id,
+  final_entries.employee_id,
+  final_entries.role,
+  final_entries.sales_total_cents,
+  round(final_entries.sales_total_cents * final_entries.tip_pct)::int as tips_collected_cents,
+  case when coalesce(bartender_counts.bartender_count, 0) >= 2 then 2 else 1 end as bartender_slot
+from final_entries
+left join bartender_counts using (service_period_id);
+
 commit;
 
 select count(*) as employees_count from public.employees;
