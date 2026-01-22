@@ -351,6 +351,7 @@ export default function DashboardPage() {
   const [fohPayouts, setFohPayouts] = useState([])
   const [expandedPayoutIds, setExpandedPayoutIds] = useState(() => new Set())
   const [sortBy, setSortBy] = useState('most-recent')
+  const [timeScope, setTimeScope] = useState('total')
 
   // BOH state
   const [weeklyPayouts, setWeeklyPayouts] = useState([])
@@ -587,8 +588,47 @@ export default function DashboardPage() {
   // Computed Values
   // ───────────────────────────────────────────────────────────────────────────
 
-  const fohSummary = useMemo(() => {
+  /**
+   * Filter payouts based on the selected time scope
+   */
+  const filteredFohPayouts = useMemo(() => {
     const payouts = Array.isArray(fohPayouts) ? fohPayouts : []
+    if (timeScope === 'total') return payouts
+
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0)
+
+    return payouts.filter((p) => {
+      const periodDate = p?.service_periods?.period_date
+      if (!periodDate) return false
+
+      // Parse date as YYYY-MM-DD in local timezone
+      const [year, month, day] = periodDate.split('-').map(Number)
+      const date = new Date(year, month - 1, day)
+
+      switch (timeScope) {
+        case 'today':
+          return date.getTime() === today.getTime()
+        case 'yesterday':
+          return date.getTime() === yesterday.getTime()
+        case 'this-month':
+          return date >= thisMonthStart && date < new Date(now.getFullYear(), now.getMonth() + 1, 1)
+        case 'last-month':
+          return date >= lastMonthStart && date <= lastMonthEnd
+        default:
+          return true
+      }
+    })
+  }, [fohPayouts, timeScope])
+
+  const fohSummary = useMemo(() => {
+    const payouts = filteredFohPayouts
     const totalNetTips = payouts.reduce((sum, p) => sum + Number(p.net_tips || 0), 0)
     const totalOwed = payouts.reduce((sum, p) => sum + Number(p.amount_owed_to_house || 0), 0)
     const totalCollectedTips = payouts.reduce((sum, p) => sum + Number(p.tips_collected || 0), 0)
@@ -607,7 +647,7 @@ export default function DashboardPage() {
       totalSales,
       count: payouts.length
     }
-  }, [fohPayouts])
+  }, [filteredFohPayouts])
 
   const sortedFohPayouts = useMemo(() => {
     const payouts = Array.isArray(fohPayouts) ? [...fohPayouts] : []
@@ -651,40 +691,111 @@ export default function DashboardPage() {
             <div className="space-y-6">
               {/* Section 1: Take-Home Earnings */}
               <div>
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-3 px-1">
-                  Take-Home Earnings
-                </h2>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-3 px-1">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Take-Home Earnings
+                  </h2>
+
+                  {/* Time Scope Selector */}
+                  <div className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white p-1 shadow-sm">
+                    <button
+                      onClick={() => setTimeScope('today')}
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                        timeScope === 'today'
+                          ? 'bg-zinc-900 text-white shadow-sm'
+                          : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                      }`}
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => setTimeScope('yesterday')}
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                        timeScope === 'yesterday'
+                          ? 'bg-zinc-900 text-white shadow-sm'
+                          : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                      }`}
+                    >
+                      Yesterday
+                    </button>
+                    <button
+                      onClick={() => setTimeScope('this-month')}
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                        timeScope === 'this-month'
+                          ? 'bg-zinc-900 text-white shadow-sm'
+                          : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                      }`}
+                    >
+                      This month
+                    </button>
+                    <button
+                      onClick={() => setTimeScope('last-month')}
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                        timeScope === 'last-month'
+                          ? 'bg-zinc-900 text-white shadow-sm'
+                          : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                      }`}
+                    >
+                      Last month
+                    </button>
+                    <button
+                      onClick={() => setTimeScope('total')}
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                        timeScope === 'total'
+                          ? 'bg-zinc-900 text-white shadow-sm'
+                          : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                      }`}
+                    >
+                      Total
+                    </button>
+                  </div>
+                </div>
                 <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 shadow-sm">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-emerald-900">Total Net Tips</div>
-                      <div
-                        className={`mt-2 text-5xl font-bold tracking-tight ${
-                          Number(fohSummary.totalNetTips) < 0 ? 'text-red-600' : 'text-emerald-600'
-                        }`}
-                      >
-                        {formatMoney(fohSummary.totalNetTips)}
-                      </div>
-                      <div className="mt-2 text-sm text-zinc-600">
-                        What you kept after tip-outs
+                  {fohSummary.count === 0 ? (
+                    <div className="text-center py-6">
+                      <div className="text-sm font-medium text-zinc-600">No shifts found</div>
+                      <div className="mt-1 text-xs text-zinc-500">
+                        {timeScope === 'today' && 'No shifts recorded for today'}
+                        {timeScope === 'yesterday' && 'No shifts recorded for yesterday'}
+                        {timeScope === 'this-month' && 'No shifts recorded for this month'}
+                        {timeScope === 'last-month' && 'No shifts recorded for last month'}
+                        {timeScope === 'total' && 'No shifts recorded yet'}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xs text-zinc-500">Per shift</div>
-                      <div className={`mt-1 text-2xl font-semibold ${
-                        Number(fohSummary.totalNetTips) < 0 ? 'text-red-600' : 'text-emerald-600'
-                      }`}>
-                        {fohSummary.count > 0 ? formatMoney(fohSummary.totalNetTips / fohSummary.count) : '—'}
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-emerald-900">Total Net Tips</div>
+                          <div
+                            className={`mt-2 text-5xl font-bold tracking-tight ${
+                              Number(fohSummary.totalNetTips) < 0 ? 'text-red-600' : 'text-emerald-600'
+                            }`}
+                          >
+                            {formatMoney(fohSummary.totalNetTips)}
+                          </div>
+                          <div className="mt-2 text-sm text-zinc-600">
+                            What you kept after tip-outs
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-zinc-500">Per shift</div>
+                          <div className={`mt-1 text-2xl font-semibold ${
+                            Number(fohSummary.totalNetTips) < 0 ? 'text-red-600' : 'text-emerald-600'
+                          }`}>
+                            {fohSummary.count > 0 ? formatMoney(fohSummary.totalNetTips / fohSummary.count) : '—'}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-emerald-100 flex items-baseline gap-2">
-                    <span className="text-xs text-zinc-500">Your net tip rate:</span>
-                    <span className="text-lg font-semibold text-emerald-700 tabular-nums">
-                      {formatPct(safePct(fohSummary.totalNetTips, fohSummary.totalSales))}
-                    </span>
-                    <span className="text-xs text-zinc-400">of sales (after tip-outs)</span>
-                  </div>
+                      <div className="mt-4 pt-4 border-t border-emerald-100 flex items-baseline gap-2">
+                        <span className="text-xs text-zinc-500">Your net tip rate:</span>
+                        <span className="text-lg font-semibold text-emerald-700 tabular-nums">
+                          {formatPct(safePct(fohSummary.totalNetTips, fohSummary.totalSales))}
+                        </span>
+                        <span className="text-xs text-zinc-400">of sales (after tip-outs)</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
