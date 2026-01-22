@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import AppHeader from '@/app/components/AppHeader'
+import ManagerContentTransition from '@/app/manager/ManagerContentTransition'
 import { supabase } from '@/lib/supabaseClient'
 import { requireManager, requireKitchenManager } from '@/app/lib/requireRole'
 function formatPeriodLabel(period) {
@@ -243,8 +244,9 @@ export default function ManagerAssignmentsPage() {
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <AppHeader title="Manager" subtitle="Shift assignments" />
 
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-6">
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <main className="mx-auto max-w-5xl px-4 py-6">
+        <ManagerContentTransition className="space-y-6">
+          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="text-sm font-semibold">Service period</div>
@@ -478,6 +480,7 @@ export default function ManagerAssignmentsPage() {
             </div>
           </div>
         </div>
+        </ManagerContentTransition>
       </main>
     </div>
   )

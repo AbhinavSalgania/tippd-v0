@@ -28,6 +28,23 @@ export default function AppHeader({ title, subtitle }) {
   useEffect(() => {
     setKitchenDropdownOpen(false)
   }, [pathname])
+  
+  useEffect(() => {
+    if (!kitchenDropdownOpen) return
+    const handleOutside = (event) => {
+      const target = event?.target
+      const desktopEl = desktopDropdownRef.current
+      const mobileEl = mobileDropdownRef.current
+      if ((desktopEl && desktopEl.contains(target)) || (mobileEl && mobileEl.contains(target))) return
+      setKitchenDropdownOpen(false)
+    }
+    document.addEventListener('mousedown', handleOutside)
+    document.addEventListener('touchstart', handleOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleOutside)
+      document.removeEventListener('touchstart', handleOutside)
+    }
+  }, [kitchenDropdownOpen])
 
   const role = session?.role || ''
 
@@ -37,7 +54,7 @@ export default function AppHeader({ title, subtitle }) {
     // Full admin (manager): all routes - Today's Service is primary
     if (role === 'manager') {
       return [
-        { href: '/manager', label: 'Today' },
+        { href: '/manager', label: 'Service Day' },
         { href: '/manager/entries', label: 'Entries' },
         { href: '/manager/summary', label: 'Summary' }
       ]
@@ -69,6 +86,16 @@ export default function AppHeader({ title, subtitle }) {
     const name = session.displayName || ''
     return name ? `${code} · ${name}` : code
   }, [session])
+  
+  const navPillBase =
+    'inline-flex items-center justify-center h-7 px-3 rounded-full text-xs font-medium leading-none transition-colors duration-150 border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2'
+  const navPillActive = 'bg-zinc-900 text-white border-zinc-900 shadow-sm'
+  const navPillInactive = 'text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900'
+  const isManagerRoot = pathname === '/manager'
+  const isActiveLink = (href) => {
+    if (href === '/manager') return isManagerRoot
+    return pathname === href || pathname?.startsWith(`${href}/`)
+  }
 
   const onLogout = () => {
     if (typeof window !== 'undefined') window.sessionStorage.removeItem(SESSION_KEY)
@@ -77,8 +104,8 @@ export default function AppHeader({ title, subtitle }) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-        <div className="min-w-0">
+      <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-4 py-3">
+        <div className="min-w-0 justify-self-start">
           <div className="flex items-baseline gap-2">
             <div className="text-sm font-semibold text-zinc-900">Tippd</div>
             {title ? <div className="text-xs text-zinc-500">{title}</div> : null}
@@ -86,16 +113,15 @@ export default function AppHeader({ title, subtitle }) {
           {subtitle ? <div className="truncate text-xs text-zinc-500">{subtitle}</div> : null}
         </div>
 
-        <nav className="hidden items-center gap-1 sm:flex">
+        <nav className="hidden items-center gap-1 justify-self-center sm:flex">
           {links.map((l) => {
-            const active = pathname === l.href || pathname?.startsWith(`${l.href}/`)
+            const active = isActiveLink(l.href)
             return (
               <Link
                 key={l.href}
                 href={l.href}
-                className={`rounded-md px-2 py-1 text-xs font-medium transition ${
-                  active ? 'bg-zinc-900 text-white' : 'text-zinc-700 hover:bg-zinc-100'
-                }`}
+                aria-current={active ? 'page' : undefined}
+                className={`${navPillBase} ${active ? navPillActive : navPillInactive}`}
               >
                 {l.label}
               </Link>
@@ -111,10 +137,16 @@ export default function AppHeader({ title, subtitle }) {
               onMouseLeave={() => setKitchenDropdownOpen(false)}
             >
               <button
-                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition ${
-                  pathname?.startsWith('/manager/kitchen-')
-                    ? 'bg-zinc-900 text-white'
-                    : 'text-zinc-700 hover:bg-zinc-100'
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={kitchenDropdownOpen}
+                aria-controls="kitchen-menu-desktop"
+                onClick={() => setKitchenDropdownOpen((prev) => !prev)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') setKitchenDropdownOpen(false)
+                }}
+                className={`${navPillBase} flex items-center gap-1 ${
+                  pathname?.startsWith('/manager/kitchen-') ? navPillActive : navPillInactive
                 }`}
               >
                 Kitchen
@@ -139,18 +171,21 @@ export default function AppHeader({ title, subtitle }) {
                 <>
                   {/* Invisible bridge to maintain hover */}
                   <div className="absolute right-0 top-full h-1 w-full" />
-                  <div className="absolute right-0 top-full pt-1 w-48">
-                    <div className="rounded-lg border border-zinc-200 bg-white shadow-lg">
+                  <div className="absolute right-0 top-full w-48 pt-1">
+                    <div
+                      id="kitchen-menu-desktop"
+                      role="menu"
+                      className="rounded-lg border border-zinc-200 bg-white shadow-lg"
+                    >
                       {kitchenLinks.map((l) => {
                         const active = pathname === l.href || pathname?.startsWith(`${l.href}/`)
                         return (
                           <Link
                             key={l.href}
                             href={l.href}
+                            role="menuitem"
                             className={`block rounded-md px-3 py-2 text-xs font-medium transition first:rounded-t-lg last:rounded-b-lg ${
-                              active
-                                ? 'bg-zinc-900 text-white'
-                                : 'text-zinc-700 hover:bg-zinc-100'
+                              active ? 'bg-zinc-900 text-white' : 'text-zinc-700 hover:bg-zinc-100'
                             }`}
                             onClick={() => setKitchenDropdownOpen(false)}
                           >
@@ -166,7 +201,7 @@ export default function AppHeader({ title, subtitle }) {
           )}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-self-end">
           {mounted && session ? (
             <div className="hidden max-w-[220px] truncate rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-700 sm:block">
               {employeeLabel || '—'}
@@ -196,14 +231,13 @@ export default function AppHeader({ title, subtitle }) {
         <div className="border-t border-zinc-200 bg-white sm:hidden">
           <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-3 py-2">
             {links.map((l) => {
-              const active = pathname === l.href || pathname?.startsWith(`${l.href}/`)
+              const active = isActiveLink(l.href)
               return (
                 <Link
                   key={l.href}
                   href={l.href}
-                  className={`whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium ${
-                    active ? 'bg-zinc-900 text-white' : 'text-zinc-700 hover:bg-zinc-100'
-                  }`}
+                  aria-current={active ? 'page' : undefined}
+                  className={`${navPillBase} whitespace-nowrap ${active ? navPillActive : navPillInactive}`}
                 >
                   {l.label}
                 </Link>
@@ -219,10 +253,16 @@ export default function AppHeader({ title, subtitle }) {
                 onMouseLeave={() => setKitchenDropdownOpen(false)}
               >
                 <button
-                  className={`flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium ${
-                    pathname?.startsWith('/manager/kitchen-')
-                      ? 'bg-zinc-900 text-white'
-                      : 'text-zinc-700 hover:bg-zinc-100'
+                  type="button"
+                  aria-haspopup="menu"
+                  aria-expanded={kitchenDropdownOpen}
+                  aria-controls="kitchen-menu-mobile"
+                  onClick={() => setKitchenDropdownOpen((prev) => !prev)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') setKitchenDropdownOpen(false)
+                  }}
+                  className={`${navPillBase} flex items-center gap-1 whitespace-nowrap ${
+                    pathname?.startsWith('/manager/kitchen-') ? navPillActive : navPillInactive
                   }`}
                 >
                   Kitchen
@@ -247,23 +287,26 @@ export default function AppHeader({ title, subtitle }) {
                   <>
                     {/* Invisible bridge to maintain hover */}
                     <div className="absolute left-0 top-full h-1 w-full" />
-                    <div className="absolute left-0 top-full pt-1 w-48 z-50">
-                      <div className="rounded-lg border border-zinc-200 bg-white shadow-lg">
-                        {kitchenLinks.map((l) => {
-                          const active = pathname === l.href || pathname?.startsWith(`${l.href}/`)
-                          return (
-                            <Link
-                              key={l.href}
-                              href={l.href}
-                              className={`block rounded-md px-3 py-2 text-xs font-medium transition first:rounded-t-lg last:rounded-b-lg ${
-                                active
-                                  ? 'bg-zinc-900 text-white'
-                                  : 'text-zinc-700 hover:bg-zinc-100'
-                              }`}
-                              onClick={() => setKitchenDropdownOpen(false)}
-                            >
-                              {l.label}
-                            </Link>
+                  <div className="absolute left-0 top-full z-50 w-48 pt-1">
+                    <div
+                      id="kitchen-menu-mobile"
+                      role="menu"
+                      className="rounded-lg border border-zinc-200 bg-white shadow-lg"
+                    >
+                      {kitchenLinks.map((l) => {
+                        const active = pathname === l.href || pathname?.startsWith(`${l.href}/`)
+                        return (
+                          <Link
+                            key={l.href}
+                            href={l.href}
+                            role="menuitem"
+                            className={`block rounded-md px-3 py-2 text-xs font-medium transition first:rounded-t-lg last:rounded-b-lg ${
+                              active ? 'bg-zinc-900 text-white' : 'text-zinc-700 hover:bg-zinc-100'
+                            }`}
+                            onClick={() => setKitchenDropdownOpen(false)}
+                          >
+                            {l.label}
+                          </Link>
                           )
                         })}
                       </div>
@@ -278,4 +321,3 @@ export default function AppHeader({ title, subtitle }) {
     </header>
   )
 }
-

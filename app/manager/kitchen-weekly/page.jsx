@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { calculateWeeklyKitchenPayouts } from '@/lib/tipCalculator'
 import AppHeader from '@/app/components/AppHeader'
+import ManagerContentTransition from '@/app/manager/ManagerContentTransition'
 import { requireKitchenManager } from '@/app/lib/requireRole'
 
 function asNumber(value, fieldName) {
@@ -390,7 +391,8 @@ export default function ManagerKitchenWeeklyPage() {
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <AppHeader title="Manager" subtitle="Kitchen weekly payouts" />
       <main className="mx-auto max-w-5xl px-4 py-6">
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <ManagerContentTransition>
+          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
       <h2 style={{ margin: 0, marginBottom: 12 }}>Manager · Weekly kitchen payouts</h2>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
@@ -581,8 +583,8 @@ export default function ManagerKitchenWeeklyPage() {
         )}
       </div>
         </div>
+        </ManagerContentTransition>
       </main>
     </div>
   )
 }
-

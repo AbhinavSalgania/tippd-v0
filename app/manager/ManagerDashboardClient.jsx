@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { calculateServicePeriodPayouts } from '@/lib/tipCalculator'
 import AppHeader from '@/app/components/AppHeader'
+import ManagerContentTransition from '@/app/manager/ManagerContentTransition'
 import { requireManager } from '@/app/lib/requireRole'
 
 function asNumber(value, fieldName) {
@@ -747,8 +748,9 @@ export default function ManagerDashboardClient() {
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <AppHeader title="Today's Service" subtitle="Daily workflow dashboard" />
 
-      <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
-        <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <main className="mx-auto max-w-6xl px-4 py-6">
+        <ManagerContentTransition className="space-y-6">
+          <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-semibold text-zinc-900">{dateDisplay} — {periodDisplay}</h2>
@@ -1124,6 +1126,7 @@ export default function ManagerDashboardClient() {
             </div>
           </>
         )}
+        </ManagerContentTransition>
       </main>
     </div>
   )

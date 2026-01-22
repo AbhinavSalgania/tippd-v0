@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { calculateServicePeriodPayouts } from '@/lib/tipCalculator'
 import AppHeader from '@/app/components/AppHeader'
+import ManagerContentTransition from '@/app/manager/ManagerContentTransition'
 import { requireManager } from '@/app/lib/requireRole'
 
 function asNumber(value, fieldName) {
@@ -790,8 +791,9 @@ export default function ManagerEntriesPage() {
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <AppHeader title="Manager" subtitle="Enter entries and compute payouts" />
 
-      <main className="mx-auto max-w-5xl px-4 py-6 space-y-6">
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <main className="mx-auto max-w-5xl px-4 py-6">
+        <ManagerContentTransition className="space-y-6">
+          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="text-sm font-semibold">Select or create service period</div>
@@ -1211,6 +1213,7 @@ export default function ManagerEntriesPage() {
             )}
           </div>
         ) : null}
+        </ManagerContentTransition>
       </main>
     </div>
   )

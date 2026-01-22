@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import AppHeader from '@/app/components/AppHeader'
+import ManagerContentTransition from '@/app/manager/ManagerContentTransition'
 import { requireKitchenManager } from '@/app/lib/requireRole'
 
 function formatPeriodLabel(p) {
@@ -294,7 +295,8 @@ export default function ManagerKitchenHoursPage() {
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <AppHeader title="Manager" subtitle="Kitchen hours" />
       <main className="mx-auto max-w-5xl px-4 py-6">
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <ManagerContentTransition>
+          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
       <h2 style={{ margin: 0, marginBottom: 12 }}>Manager · Kitchen hours</h2>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
@@ -468,8 +470,8 @@ export default function ManagerKitchenHoursPage() {
         </div>
       ) : null}
         </div>
+        </ManagerContentTransition>
       </main>
     </div>
   )
 }
-

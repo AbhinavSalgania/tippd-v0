@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import AppHeader from '@/app/components/AppHeader'
+import ManagerContentTransition from '@/app/manager/ManagerContentTransition'
 import { requireManager } from '@/app/lib/requireRole'
 
 function asNumber(value, fieldName) {
@@ -217,7 +218,8 @@ export default function ManagerSummaryPage() {
       <AppHeader title="Manager" subtitle="Summary" />
 
       <main className="mx-auto max-w-5xl px-4 py-6">
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <ManagerContentTransition>
+          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="text-sm font-semibold">Daily summary</div>
@@ -376,8 +378,8 @@ export default function ManagerSummaryPage() {
             </div>
           </div>
         ) : null}
+        </ManagerContentTransition>
       </main>
     </div>
   )
 }
-

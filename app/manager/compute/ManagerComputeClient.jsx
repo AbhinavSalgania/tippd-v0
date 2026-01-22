@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { calculateServicePeriodPayouts } from '@/lib/tipCalculator'
 import AppHeader from '@/app/components/AppHeader'
+import ManagerContentTransition from '@/app/manager/ManagerContentTransition'
 import { requireManager } from '@/app/lib/requireRole'
 
 function formatPeriodLabel(p) {
@@ -344,7 +345,8 @@ export default function ManagerComputePage() {
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <AppHeader title="Manager" subtitle="Compute payouts" />
       <main className="mx-auto max-w-5xl px-4 py-6">
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <ManagerContentTransition>
+          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
           <h2 style={{ margin: 0, marginBottom: 12 }}>Manager · Compute payouts</h2>
 
           {totalsStatus === 'missing' ? (
@@ -488,8 +490,8 @@ export default function ManagerComputePage() {
             </div>
           ) : null}
         </div>
+        </ManagerContentTransition>
       </main>
     </div>
   )
 }
-
