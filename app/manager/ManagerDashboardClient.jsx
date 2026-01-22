@@ -735,7 +735,7 @@ export default function ManagerDashboardClient() {
   if (!mounted || !isAllowed) {
     return (
       <div className="min-h-screen bg-zinc-50 text-zinc-900">
-        <AppHeader title="Today's Service" subtitle="Daily workflow dashboard" />
+        <AppHeader subtitle="Daily workflow dashboard" />
         <div className="mx-auto max-w-5xl px-4 py-10 text-sm text-zinc-600">Checking access…</div>
       </div>
     )
@@ -746,20 +746,30 @@ export default function ManagerDashboardClient() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <AppHeader title="Today's Service" subtitle="Daily workflow dashboard" />
+      <AppHeader subtitle="Daily workflow dashboard" />
 
       <main className="mx-auto max-w-6xl px-4 py-6">
         <ManagerContentTransition className="space-y-6">
           <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-zinc-900">{dateDisplay} — {periodDisplay}</h2>
-              <p className="mt-1 text-sm text-zinc-500">
-                {activePeriod ? `Service period loaded` : 'No period found for this date'}
-              </p>
-            </div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-2xl font-semibold text-zinc-900 sm:text-3xl">{dateDisplay}</h2>
+                  <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-600">
+                    {periodDisplay}
+                  </span>
+                  {isPastDate && (
+                    <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                      Past date
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-sm text-zinc-500">
+                  {activePeriod ? `Service period loaded` : 'No period found for this date'}
+                </p>
+              </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <label className="text-xs text-zinc-600">
                 <div className="mb-1 font-medium">Date</div>
                 <input
@@ -794,6 +804,7 @@ export default function ManagerDashboardClient() {
                 </button>
               )}
             </div>
+            </div>
           </div>
 
           {loadError && (
@@ -801,7 +812,6 @@ export default function ManagerDashboardClient() {
               {loadError}
             </div>
           )}
-        </div>
 
         {activePeriod && (
           <>
@@ -814,40 +824,30 @@ export default function ManagerDashboardClient() {
                   <p className="mt-1 text-xs text-zinc-500">
                     {shiftAssignments.length} staff assigned · Enter sales and tips below
                   </p>
+                  {isPastDate && (
+                    <p className="mt-2 text-xs text-amber-700">
+                      Editing disabled — use{' '}
+                      <button
+                        onClick={() => router.push('/manager/entries')}
+                        className="font-medium text-amber-800 underline hover:no-underline"
+                      >
+                        Entries
+                      </button>{' '}
+                      to edit past days.
+                    </p>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center">
                   <input
                     type="text"
                     value={nameFilter}
                     onChange={(e) => setNameFilter(e.target.value)}
                     placeholder="Search by name or code…"
-                    className="w-full sm:w-48 rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none"
+                    className="w-full sm:w-72 rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none"
                   />
-                  <button
-                    onClick={() => router.push('/manager/entries')}
-                    className="whitespace-nowrap rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
-                  >
-                    Entries page
-                  </button>
                 </div>
               </div>
-
-              {isPastDate && (
-                <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                  <div className="font-medium">View-only mode for past dates</div>
-                  <div className="mt-1 text-xs">
-                    To edit past entries, use the{' '}
-                    <button
-                      onClick={() => router.push('/manager/entries')}
-                      className="font-medium text-amber-900 underline hover:no-underline"
-                    >
-                      Entries page
-                    </button>
-                    .
-                  </div>
-                </div>
-              )}
 
               {saveError && (
                 <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -901,17 +901,17 @@ export default function ManagerDashboardClient() {
                   </div>
                 </div>
               ) : (
-                <div className="mt-5 space-y-6">
+                <div className="mt-5 space-y-4">
                   {groupedAssignments.map((group) => (
                     <div key={`${group.role}-${group.station}`}>
-                      <div className="mb-3 flex items-center gap-2">
-                        <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-700 capitalize">
+                      <div className="mb-2 flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
+                        <div className="text-xs font-medium text-zinc-700">
                           {group.role === 'bartender' ? 'Bartenders' : 'Servers'}
+                          {group.station !== 'Unassigned' ? ` · ${group.station}` : ''}
+                        </div>
+                        <span className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[11px] text-zinc-500">
+                          ({group.assignments.length})
                         </span>
-                        {group.station !== 'Unassigned' && (
-                          <span className="text-xs text-zinc-500">· {group.station}</span>
-                        )}
-                        <span className="text-xs text-zinc-400">({group.assignments.length})</span>
                       </div>
 
                       <div className="overflow-x-auto">
@@ -940,7 +940,8 @@ export default function ManagerDashboardClient() {
                               return (
                                 <tr key={assignment.employee_id}>
                                   <td className="py-3 pr-4">
-                                    <div className="font-medium text-zinc-900">{formatEmployeeLabel(emp)}</div>
+                                    <div className="font-medium text-zinc-900">{emp.display_name || '—'}</div>
+                                    <div className="text-xs text-zinc-500">{emp.employee_code || '—'}</div>
                                   </td>
                                   {isPastDate ? (
                                     <>
@@ -950,8 +951,11 @@ export default function ManagerDashboardClient() {
                                         </div>
                                       </td>
                                       <td className="py-3 pr-4 text-right">
-                                        <div className="text-sm text-zinc-700">
-                                          {row.tips_collected ? formatMoney(row.tips_collected) : '—'}
+                                        <div className="inline-flex items-center justify-end gap-1 text-sm text-zinc-700">
+                                          <span className="text-xs text-zinc-400" aria-hidden="true">
+                                            💰
+                                          </span>
+                                          <span>{row.tips_collected ? formatMoney(row.tips_collected) : '—'}</span>
                                         </div>
                                       </td>
                                     </>
@@ -972,18 +976,25 @@ export default function ManagerDashboardClient() {
                                         />
                                       </td>
                                       <td className="py-3 pr-4 text-right">
-                                        <input
-                                          type="number"
-                                          step="0.01"
-                                          inputMode="decimal"
-                                          value={row.tips_collected}
-                                          onChange={(e) =>
-                                            setEmployeeInput(assignment.employee_id, { tips_collected: e.target.value })
-                                          }
-                                          disabled={isBusy}
-                                          className="w-28 rounded-md border border-zinc-300 px-2 py-1.5 text-sm text-right focus:border-zinc-900 focus:outline-none disabled:opacity-60"
-                                          placeholder="0.00"
-                                        />
+                                        <div className="inline-flex items-center justify-end gap-1">
+                                          <span className="text-xs text-zinc-400" aria-hidden="true">
+                                            💰
+                                          </span>
+                                          <input
+                                            type="number"
+                                            step="0.01"
+                                            inputMode="decimal"
+                                            value={row.tips_collected}
+                                            onChange={(e) =>
+                                              setEmployeeInput(assignment.employee_id, {
+                                                tips_collected: e.target.value
+                                              })
+                                            }
+                                            disabled={isBusy}
+                                            className="w-28 rounded-md border border-zinc-300 px-2 py-1.5 text-sm text-right focus:border-zinc-900 focus:outline-none disabled:opacity-60"
+                                            placeholder="0.00"
+                                          />
+                                        </div>
                                       </td>
                                       <td className="py-3 pr-2 text-right">
                                         <button

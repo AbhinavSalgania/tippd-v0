@@ -509,9 +509,8 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <AppHeader 
-        title="Dashboard" 
-        subtitle={session?.displayName ? `Welcome back, ${session.displayName}` : 'Employee view'} 
+      <AppHeader
+        subtitle={session?.displayName ? `Welcome back, ${session.displayName}` : 'Employee view'}
       />
 
       <main className="mx-auto max-w-5xl px-4 py-6">

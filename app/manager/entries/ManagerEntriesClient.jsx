@@ -850,7 +850,9 @@ export default function ManagerEntriesPage() {
               </button>
             </div>
           ) : (
-            <div className="mt-3 text-xs text-zinc-500">No service period selected.</div>
+            <div className="mt-3 text-xs text-zinc-500">
+              Select a date and period type, then click Load / Create.
+            </div>
           )}
 
           {loadError ? (
@@ -860,36 +862,37 @@ export default function ManagerEntriesPage() {
           ) : null}
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold">FOH entries</div>
-            </div>
+        {activePeriod?.id ? (
+          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold">FOH entries</div>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => activePeriod?.id && loadAssignmentsAndEntries(activePeriod.id)}
-                disabled={isBusy || !activePeriod?.id}
-                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isLoadingAssignments || isLoadingEntries ? 'Loading…' : 'Reload assignments'}
-              </button>
-              <button
-                onClick={saveEntries}
-                disabled={isBusy || !activePeriod?.id}
-                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSaving ? 'Saving…' : 'Save entries'}
-              </button>
-              <button
-                onClick={computeAndPublish}
-                disabled={isBusy || !activePeriod?.id}
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isPublishing ? 'Publishing…' : 'Compute & Publish'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => activePeriod?.id && loadAssignmentsAndEntries(activePeriod.id)}
+                  disabled={isBusy || !activePeriod?.id}
+                  className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isLoadingAssignments || isLoadingEntries ? 'Loading…' : 'Reload assignments'}
+                </button>
+                <button
+                  onClick={saveEntries}
+                  disabled={isBusy || !activePeriod?.id}
+                  className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSaving ? 'Saving…' : 'Save entries'}
+                </button>
+                <button
+                  onClick={computeAndPublish}
+                  disabled={isBusy || !activePeriod?.id}
+                  className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isPublishing ? 'Publishing…' : 'Compute & Publish'}
+                </button>
+              </div>
             </div>
-          </div>
 
           {saveError ? (
             <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -927,9 +930,7 @@ export default function ManagerEntriesPage() {
             </div>
           ) : null}
 
-          {!activePeriod?.id ? (
-            <div className="mt-4 text-sm text-zinc-600">Load or create a service period to start entering rows.</div>
-          ) : isLoadingEntries || isLoadingAssignments ? (
+          {isLoadingEntries || isLoadingAssignments ? (
             <div className="mt-4 text-sm text-zinc-600">Loading existing entries…</div>
           ) : shiftAssignments.length === 0 ? (
             <div className="mt-4 text-sm text-zinc-600">No FOH assignments found for this service period.</div>
@@ -1159,6 +1160,7 @@ export default function ManagerEntriesPage() {
             </div>
           )}
         </div>
+        ) : null}
 
         {activePeriod?.id ? (
           <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
