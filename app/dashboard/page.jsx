@@ -68,6 +68,77 @@ function comparePeriod(a, b) {
 }
 
 /**
+ * Get a comparator function based on the selected sort mode
+ */
+function getSortComparator(sortBy) {
+  return (a, b) => {
+    const aPeriod = a?.service_periods || {}
+    const bPeriod = b?.service_periods || {}
+
+    switch (sortBy) {
+      case 'most-recent':
+        return comparePeriod(a, b)
+
+      case 'oldest': {
+        const ad = aPeriod.period_date || ''
+        const bd = bPeriod.period_date || ''
+        if (ad !== bd) return ad.localeCompare(bd) // Date ascending
+        const at = aPeriod.period_type || ''
+        const bt = bPeriod.period_type || ''
+        return at.localeCompare(bt)
+      }
+
+      case 'highest-net-tips': {
+        const aNet = Number(a.net_tips || 0)
+        const bNet = Number(b.net_tips || 0)
+        return bNet - aNet // Descending
+      }
+
+      case 'lowest-net-tips': {
+        const aNet = Number(a.net_tips || 0)
+        const bNet = Number(b.net_tips || 0)
+        return aNet - bNet // Ascending
+      }
+
+      case 'highest-tip-pct': {
+        const aSales = Number(a.sales_total || 0)
+        const bSales = Number(b.sales_total || 0)
+        const aTips = Number(a.tips_collected || 0)
+        const bTips = Number(b.tips_collected || 0)
+        const aPct = aSales > 0 ? (aTips / aSales) : 0
+        const bPct = bSales > 0 ? (bTips / bSales) : 0
+        return bPct - aPct // Descending
+      }
+
+      case 'lowest-tip-pct': {
+        const aSales = Number(a.sales_total || 0)
+        const bSales = Number(b.sales_total || 0)
+        const aTips = Number(a.tips_collected || 0)
+        const bTips = Number(b.tips_collected || 0)
+        const aPct = aSales > 0 ? (aTips / aSales) : 0
+        const bPct = bSales > 0 ? (bTips / bSales) : 0
+        return aPct - bPct // Ascending
+      }
+
+      case 'highest-sales': {
+        const aSales = Number(a.sales_total || 0)
+        const bSales = Number(b.sales_total || 0)
+        return bSales - aSales // Descending
+      }
+
+      case 'lowest-sales': {
+        const aSales = Number(a.sales_total || 0)
+        const bSales = Number(b.sales_total || 0)
+        return aSales - bSales // Ascending
+      }
+
+      default:
+        return comparePeriod(a, b)
+    }
+  }
+}
+
+/**
  * Parse dollar amount from a description string.
  * Handles: "$55.00", "-$55.00", "+$55.00"
  * Returns null if no amount found.
@@ -142,6 +213,47 @@ function filterLineItemsForRole(items, role) {
         cleanedDescription: cleanDescription(item.description)
       }
     })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// InfoTooltip Component
+// ─────────────────────────────────────────────────────────────────────────────
+
+function InfoTooltip({ text }) {
+  const [show, setShow] = useState(false)
+
+  return (
+    <div className="relative inline-flex">
+      <button
+        type="button"
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-zinc-300 bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:border-zinc-400 transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-1"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        onFocus={() => setShow(true)}
+        onBlur={() => setShow(false)}
+        aria-label="More information"
+      >
+        <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fillRule="evenodd"
+            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </button>
+
+      {show && (
+        <div className="absolute left-1/2 bottom-full mb-2 -translate-x-1/2 z-10">
+          <div className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-700 shadow-lg max-w-[200px] whitespace-normal">
+            {text}
+          </div>
+          <div className="absolute left-1/2 top-full -translate-x-1/2 -mt-1">
+            <div className="border-4 border-transparent border-t-white" />
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -238,6 +350,7 @@ export default function DashboardPage() {
   // FOH state
   const [fohPayouts, setFohPayouts] = useState([])
   const [expandedPayoutIds, setExpandedPayoutIds] = useState(() => new Set())
+  const [sortBy, setSortBy] = useState('most-recent')
 
   // BOH state
   const [weeklyPayouts, setWeeklyPayouts] = useState([])
@@ -372,9 +485,7 @@ export default function DashboardPage() {
               })
           }))
 
-          // Sort by date (most recent first)
-          payouts.sort(comparePeriod)
-
+          // Note: Sorting is now handled by sortedFohPayouts memo based on sortBy state
           setFohPayouts(payouts)
           return
         }
@@ -498,6 +609,11 @@ export default function DashboardPage() {
     }
   }, [fohPayouts])
 
+  const sortedFohPayouts = useMemo(() => {
+    const payouts = Array.isArray(fohPayouts) ? [...fohPayouts] : []
+    return payouts.sort(getSortComparator(sortBy))
+  }, [fohPayouts, sortBy])
+
   const mostRecentWeek = useMemo(() => {
     if (!Array.isArray(weeklyPayouts) || weeklyPayouts.length === 0) return null
     return weeklyPayouts[0]
@@ -581,11 +697,58 @@ export default function DashboardPage() {
             {/* Recent Shifts List */}
             <div className="rounded-xl border border-zinc-200 bg-white">
               <div className="border-b border-zinc-200 px-4 py-3">
-                <div className="text-sm font-semibold">Recent shifts</div>
-                <div className="text-xs text-zinc-500">Most recent first</div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold">Recent shifts</div>
+                    <div className="text-xs text-zinc-500">
+                      {sortBy === 'most-recent' && 'Most recent first'}
+                      {sortBy === 'oldest' && 'Oldest first'}
+                      {sortBy === 'highest-net-tips' && 'Highest net tips first'}
+                      {sortBy === 'lowest-net-tips' && 'Lowest net tips first'}
+                      {sortBy === 'highest-tip-pct' && 'Highest tip % first'}
+                      {sortBy === 'lowest-tip-pct' && 'Lowest tip % first'}
+                      {sortBy === 'highest-sales' && 'Highest sales first'}
+                      {sortBy === 'lowest-sales' && 'Lowest sales first'}
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <label htmlFor="sort-select" className="sr-only">
+                      Sort shifts by
+                    </label>
+                    <select
+                      id="sort-select"
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="appearance-none rounded-lg border border-zinc-200 bg-white pl-3 pr-8 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-1 cursor-pointer transition-colors"
+                    >
+                      <option value="most-recent">Most recent</option>
+                      <option value="oldest">Oldest</option>
+                      <option value="highest-net-tips">Highest net tips</option>
+                      <option value="lowest-net-tips">Lowest net tips</option>
+                      <option value="highest-tip-pct">Highest tip %</option>
+                      <option value="lowest-tip-pct">Lowest tip %</option>
+                      <option value="highest-sales">Highest sales</option>
+                      <option value="lowest-sales">Lowest sales</option>
+                    </select>
+                    <svg
+                      className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
-              {fohPayouts.length === 0 ? (
+              {sortedFohPayouts.length === 0 ? (
                 <div className="px-4 py-8 text-center">
                   <div className="text-sm text-zinc-600">No shifts recorded yet</div>
                   <div className="mt-1 text-xs text-zinc-400">
@@ -594,7 +757,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-zinc-100">
-                  {fohPayouts.map((p) => {
+                  {sortedFohPayouts.map((p) => {
                     const period = p?.service_periods || {}
                     const date = period.period_date
                     const type = period.period_type || ''
@@ -662,7 +825,7 @@ export default function DashboardPage() {
                           }`}
                         >
                           <div className="overflow-hidden">
-                            <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+                            <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-3 sm:p-4">
                               <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                                 Tip breakdown
                               </div>
@@ -671,65 +834,127 @@ export default function DashboardPage() {
                                 <div className="mt-3 text-sm text-zinc-600">
                                   No breakdown details available.
                                 </div>
-                              ) : null}
-                              <div className="mt-3 rounded-md border border-zinc-200 bg-white p-3">
-                                <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                                  Rates
-                                </div>
-                                <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-                                  <span className="text-zinc-700">Tips collected % of sales</span>
-                                  <span className="font-medium tabular-nums text-zinc-900 text-right">
-                                    {collectedPct}
-                                  </span>
-                                  <span className="text-zinc-700">Net tip % of sales</span>
-                                  <span className="font-medium tabular-nums text-zinc-900 text-right">
-                                    {netPct}
-                                  </span>
-                                </div>
-                              </div>
-                              <ul className="mt-3 space-y-2">
-                                {items.map((li, idx) => {
-                                  const amount = Number(li.amount)
-                                  const isNegative = amount < 0
-                                  const desc = (li.description || '').toLowerCase()
-                                  const isNetTips = desc.includes('net tips') || desc.includes('net after')
-                                  const isOwed = desc.includes('owed')
-                                  const isBelowThreshold = desc.includes('below') && desc.includes('threshold')
-                                  const displayLabel = li.cleanedDescription || li.description || ''
+                              ) : (
+                                <div className="mt-3 space-y-4">
+                                  {/* Section 1: Before tip-outs */}
+                                  <div className="rounded-md border border-zinc-200 bg-white p-3">
+                                    <div className="flex items-center gap-1.5">
+                                      <div className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                                        Before tip-outs
+                                      </div>
+                                      <InfoTooltip text="Your initial earnings from tips collected during this shift, before any deductions" />
+                                    </div>
 
-                                  return (
-                                    <li
-                                      key={li.id || `${p.id}-${idx}`}
-                                      className={`flex items-start justify-between gap-4 text-sm ${
-                                        isNetTips || isOwed ? 'border-t border-zinc-200 pt-2 mt-2' : ''
-                                      }`}
-                                    >
-                                      <span className="text-zinc-700">{displayLabel}</span>
-                                      {li.amount != null && !isBelowThreshold ? (
+                                    <div className="mt-2 space-y-1.5">
+                                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                                        <span className="text-zinc-700">Sales total</span>
+                                        <span className="font-medium tabular-nums text-zinc-900">
+                                          {formatMoney(Number.isFinite(salesTotal) ? salesTotal : 0)}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                                        <span className="text-zinc-700">Tips collected</span>
+                                        <span className="font-medium tabular-nums text-emerald-600">
+                                          {formatMoney(collectedTips)}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center justify-between border-t border-zinc-100 pt-1.5 text-xs sm:text-sm">
+                                        <span className="text-zinc-700 font-medium">Tip rate</span>
+                                        <span className="font-semibold tabular-nums text-emerald-700">
+                                          {collectedPct}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Section 2: Tip-outs (deductions) */}
+                                  {(() => {
+                                    const deductions = items.filter((li) => {
+                                      const desc = (li.description || '').toLowerCase()
+                                      const isDeduction =
+                                        desc.includes('tip-out') ||
+                                        desc.includes('kitchen') ||
+                                        desc.includes('bartender')
+                                      const isNotNetOrOwed =
+                                        !desc.includes('net tips') &&
+                                        !desc.includes('net after') &&
+                                        !desc.includes('owed')
+                                      return isDeduction && isNotNetOrOwed && li.amount != null
+                                    })
+
+                                    return deductions.length > 0 ? (
+                                      <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+                                        <div className="flex items-center gap-1.5">
+                                          <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">
+                                            Tip-outs
+                                          </div>
+                                          <InfoTooltip text="Tip shares distributed to kitchen and bartender support staff" />
+                                        </div>
+
+                                        <div className="mt-2 space-y-1.5">
+                                          {deductions.map((li, idx) => {
+                                            const amount = Number(li.amount)
+                                            const displayLabel = li.cleanedDescription || li.description || ''
+
+                                            return (
+                                              <div
+                                                key={li.id || `deduction-${idx}`}
+                                                className="flex items-center justify-between text-xs sm:text-sm"
+                                              >
+                                                <span className="text-zinc-700">{displayLabel}</span>
+                                                <span className="font-medium tabular-nums text-red-600">
+                                                  {formatMoney(amount)}
+                                                </span>
+                                              </div>
+                                            )
+                                          })}
+                                        </div>
+                                      </div>
+                                    ) : null
+                                  })()}
+
+                                  {/* Section 3: After tip-outs */}
+                                  <div className="rounded-md border border-zinc-200 bg-white p-3">
+                                    <div className="flex items-center gap-1.5">
+                                      <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-700">
+                                        After tip-outs
+                                      </div>
+                                      <InfoTooltip text="Your final earnings after all tip-out deductions" />
+                                    </div>
+
+                                    <div className="mt-2 space-y-1.5">
+                                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                                        <span className="text-zinc-700 font-medium">Net tips</span>
                                         <span
-                                          className={`font-medium tabular-nums whitespace-nowrap ${
-                                            isNegative
-                                              ? 'text-red-600'
-                                              : isOwed
-                                              ? 'text-amber-700'
-                                              : isNetTips
-                                              ? 'text-emerald-600'
-                                              : 'text-zinc-900'
+                                          className={`font-semibold tabular-nums text-lg ${
+                                            net < 0 ? 'text-red-600' : 'text-emerald-600'
                                           }`}
                                         >
-                                          {formatMoney(li.amount)}
+                                          {formatMoney(net)}
                                         </span>
-                                      ) : null}
-                                    </li>
-                                  )
-                                })}
-                                <li className="border-t border-zinc-200 pt-2 mt-2 flex items-start justify-between gap-4 text-sm">
-                                  <span className="text-zinc-700">Sales total</span>
-                                  <span className="font-medium tabular-nums whitespace-nowrap text-zinc-900">
-                                    {formatMoney(Number.isFinite(salesTotal) ? salesTotal : 0)}
-                                  </span>
-                                </li>
-                              </ul>
+                                      </div>
+
+                                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                                        <span className="text-zinc-700 font-medium">Net tip rate</span>
+                                        <span className="font-semibold tabular-nums text-zinc-900">
+                                          {netPct}
+                                        </span>
+                                      </div>
+
+                                      {owed > 0 && (
+                                        <div className="flex items-center justify-between border-t border-amber-100 pt-1.5 text-xs sm:text-sm">
+                                          <span className="text-amber-800 font-medium">Owed to house</span>
+                                          <span className="font-semibold tabular-nums text-amber-700">
+                                            {formatMoney(owed)}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
