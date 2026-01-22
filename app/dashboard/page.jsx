@@ -648,50 +648,101 @@ export default function DashboardPage() {
              ───────────────────────────────────────────────────────────────── */
           <div className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm h-full">
-                <div className="text-sm text-zinc-500">Net tips</div>
-                <div
-                  className={`mt-2 text-4xl font-semibold tracking-tight ${
-                    Number(fohSummary.totalNetTips) < 0 ? 'text-red-600' : 'text-emerald-600'
-                  }`}
-                >
-                  {formatMoney(fohSummary.totalNetTips)}
+            <div className="space-y-6">
+              {/* Section 1: Take-Home Earnings */}
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-3 px-1">
+                  Take-Home Earnings
+                </h2>
+                <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 shadow-sm">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-emerald-900">Total Net Tips</div>
+                      <div
+                        className={`mt-2 text-5xl font-bold tracking-tight ${
+                          Number(fohSummary.totalNetTips) < 0 ? 'text-red-600' : 'text-emerald-600'
+                        }`}
+                      >
+                        {formatMoney(fohSummary.totalNetTips)}
+                      </div>
+                      <div className="mt-2 text-sm text-zinc-600">
+                        What you kept after tip-outs
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-zinc-500">Per shift</div>
+                      <div className={`mt-1 text-2xl font-semibold ${
+                        Number(fohSummary.totalNetTips) < 0 ? 'text-red-600' : 'text-emerald-600'
+                      }`}>
+                        {fohSummary.count > 0 ? formatMoney(fohSummary.totalNetTips / fohSummary.count) : '—'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-emerald-100 flex items-baseline gap-2">
+                    <span className="text-xs text-zinc-500">Your net tip rate:</span>
+                    <span className="text-lg font-semibold text-emerald-700 tabular-nums">
+                      {formatPct(safePct(fohSummary.totalNetTips, fohSummary.totalSales))}
+                    </span>
+                    <span className="text-xs text-zinc-400">of sales (after tip-outs)</span>
+                  </div>
                 </div>
               </div>
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm h-full min-w-0">
-                <div className="text-sm text-zinc-500">Tip rate</div>
-                <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums">
-                  {formatPct(safePct(fohSummary.totalCollectedTips, fohSummary.totalSales))}
-                </div>
-                <div className="mt-2 text-sm text-zinc-600 whitespace-normal break-words leading-snug min-w-0">
-                  Guests tipped on average (before tip-outs)
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2 min-w-0">
-                  <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-700">
-                    Net after tip-outs
-                  </span>
-                  <span className="text-sm font-semibold text-zinc-900 tabular-nums">
-                    {formatPct(safePct(fohSummary.totalNetTips, fohSummary.totalSales))}
-                  </span>
+
+              {/* Divider */}
+              <div className="border-t border-zinc-200"></div>
+
+              {/* Section 2: Performance Overview */}
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-3 px-1">
+                  Performance Overview
+                </h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                    <div className="text-sm text-zinc-500">Guest Tip Rate</div>
+                    <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums">
+                      {formatPct(safePct(fohSummary.totalCollectedTips, fohSummary.totalSales))}
+                    </div>
+                    <div className="mt-2 text-xs text-zinc-500">
+                      What guests left (before tip-outs)
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                    <div className="text-sm text-zinc-500">Total Sales</div>
+                    <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900">
+                      {formatMoney(fohSummary.totalSales)}
+                    </div>
+                    <div className="mt-2 text-xs text-zinc-500">
+                      Across {fohSummary.count} {fohSummary.count === 1 ? 'shift' : 'shifts'}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm h-full">
-                <div className="text-sm text-zinc-500">Total sales</div>
-                <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900">
-                  {formatMoney(fohSummary.totalSales)}
+
+              {/* Divider */}
+              <div className="border-t border-zinc-200"></div>
+
+              {/* Section 3: Shift Averages */}
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-3 px-1">
+                  Shift Averages
+                </h2>
+                <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-xs text-zinc-500">Shifts worked</div>
+                      <div className="mt-1 text-2xl font-semibold text-zinc-900">
+                        {fohSummary.count}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-zinc-500">Avg sales / shift</div>
+                      <div className="mt-1 text-2xl font-semibold text-zinc-900">
+                        {fohSummary.count > 0 ? formatMoney(fohSummary.totalSales / fohSummary.count) : '—'}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2 text-xs text-zinc-600 flex flex-wrap items-center gap-x-4 gap-y-1">
-              <span>Service periods: {fohSummary.count}</span>
-              <span>
-                Avg sales / shift: {fohSummary.count > 0 ? formatMoney(fohSummary.totalSales / fohSummary.count) : '—'}
-              </span>
-              <span>
-                Avg net tips / shift:{' '}
-                {fohSummary.count > 0 ? formatMoney(fohSummary.totalNetTips / fohSummary.count) : '—'}
-              </span>
             </div>
 
             {/* Recent Shifts List */}
