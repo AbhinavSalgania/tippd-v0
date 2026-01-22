@@ -69,6 +69,11 @@ For each scheduled staff member:
 - If no assignments exist:
   - Show a helpful empty state
   - Suggest next steps (Entries page or assignments view)
+  - make sure that when manager logs in they land on this new dashboard and it is not confusing with the other dashboard
+  - have an way for manager to navigate back to home page. 
+
+  this new dashboard is basically the home page.
+
 
 ## Engineering Constraints
 - Reuse existing data-fetching and upsert logic from:

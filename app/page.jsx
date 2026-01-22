@@ -51,8 +51,13 @@ export default function HomePage() {
   useEffect(() => {
     if (!mounted) return
     const session = readSession()
-    if (session) router.push('/dashboard')
-    else if (typeof window !== 'undefined') window.sessionStorage.removeItem(SESSION_KEY)
+    if (session) {
+      // Managers go to Today dashboard, others to employee dashboard
+      const destination = session.role === 'manager' ? '/manager' : '/dashboard'
+      router.push(destination)
+    } else if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(SESSION_KEY)
+    }
   }, [router, mounted])
 
   async function onSubmit(e) {
@@ -90,7 +95,10 @@ export default function HomePage() {
       }
 
       window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
-      router.push('/dashboard')
+
+      // Managers go to Today dashboard, others to employee dashboard
+      const destination = data.role === 'manager' ? '/manager' : '/dashboard'
+      router.push(destination)
     } catch (err) {
       setError(err?.message || String(err))
     } finally {

@@ -34,10 +34,10 @@ export default function AppHeader({ title, subtitle }) {
   const links = useMemo(() => {
     if (!session) return []
 
-    // Full admin (manager): all routes - Entries is primary (kitchen links moved to dropdown)
+    // Full admin (manager): all routes - Today's Service is primary
     if (role === 'manager') {
       return [
-        { href: '/dashboard', label: 'Dashboard' },
+        { href: '/manager', label: 'Today' },
         { href: '/manager/entries', label: 'Entries' },
         { href: '/manager/summary', label: 'Summary' }
       ]
