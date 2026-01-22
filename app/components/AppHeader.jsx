@@ -99,7 +99,7 @@ export default function AppHeader({ title, subtitle }) {
 
   const onLogout = () => {
     if (typeof window !== 'undefined') window.sessionStorage.removeItem(SESSION_KEY)
-    router.push('/')
+    router.push('/login')
   }
 
   return (

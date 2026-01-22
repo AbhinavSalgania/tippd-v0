@@ -577,7 +577,7 @@ export default function DashboardPage() {
     const s = readSession()
     if (!s) {
       if (typeof window !== 'undefined') window.sessionStorage.removeItem(SESSION_KEY)
-      router.push('/')
+      router.push('/login')
       return
     }
     setSession(s)

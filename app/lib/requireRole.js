@@ -29,7 +29,7 @@ export function requireManager(router) {
   const session = readSession()
   if (!session) {
     if (typeof window !== 'undefined') window.sessionStorage.removeItem(SESSION_KEY)
-    router.push('/')
+    router.push('/login')
     return false
   }
   if (session.role !== 'manager') {
@@ -47,7 +47,7 @@ export function requireKitchenManager(router) {
   const session = readSession()
   if (!session) {
     if (typeof window !== 'undefined') window.sessionStorage.removeItem(SESSION_KEY)
-    router.push('/')
+    router.push('/login')
     return false
   }
   if (session.role !== 'kitchen_manager' && session.role !== 'manager') {
@@ -56,4 +56,3 @@ export function requireKitchenManager(router) {
   }
   return true
 }
-
