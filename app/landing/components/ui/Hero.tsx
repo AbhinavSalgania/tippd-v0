@@ -8,8 +8,7 @@ import { useParallax } from "@/app/landing/hooks/useParallax";
 const heroImage = "/landing/assets/tippdhero.png";
 
 export function Hero() {
-  const imageParallax = useParallax({ speed: -0.15 });
-  const cardParallax = useParallax({ speed: -0.08 });
+  const cardParallax = useParallax({ speed: -0.05 });
   return (
     <section className="relative overflow-hidden pt-20 md:pt-24 pb-12 md:pb-16 min-h-[85vh] md:min-h-[90vh] flex items-center bg-gradient-to-b from-[#E3F5EC]/45 to-white">
       <div className="pointer-events-none absolute -top-24 left-0 h-[600px] w-[600px] bg-[radial-gradient(circle_at_30%_20%,rgba(38,208,124,0.18),rgba(38,208,124,0)_60%)] blur-3xl" />
@@ -51,11 +50,10 @@ export function Hero() {
           </div>
           <div className="relative lg:pl-4">
             <div
-              className="relative rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(11,31,24,0.2)] ring-1 ring-black/5 will-change-transform"
+              className="relative rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(11,31,24,0.2)] ring-1 ring-black/5"
               style={{
-                transform: `perspective(1200px) rotateY(-5deg) rotateX(2deg) ${imageParallax.transform}`,
+                transform: "perspective(1200px) rotateY(-5deg) rotateX(2deg)",
                 transformStyle: "preserve-3d",
-                transition: "transform 0.1s ease-out",
               }}
             >
               <ImageWithFallback
@@ -66,11 +64,11 @@ export function Hero() {
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-white/5 pointer-events-none" />
             </div>
             <div
-              className="absolute -bottom-4 -left-4 md:-bottom-6 md:-left-6 bg-white rounded-xl shadow-[0_12px_40px_rgba(11,31,24,0.15)] p-4 md:p-5 border border-[#0B1F18]/5 max-w-[280px] md:max-w-xs will-change-transform"
+              className="absolute -bottom-4 -left-4 md:-bottom-6 md:-left-6 bg-white rounded-xl shadow-[0_12px_40px_rgba(11,31,24,0.15)] p-4 md:p-5 border border-[#0B1F18]/5 max-w-[280px] md:max-w-xs"
               style={{
                 transform: `perspective(1200px) rotateY(-3deg) ${cardParallax.transform}`,
                 transformStyle: "preserve-3d",
-                transition: "transform 0.1s ease-out",
+                transition: "transform 0.3s ease-out",
               }}
             >
               <div className="flex items-center gap-3 md:gap-4">
