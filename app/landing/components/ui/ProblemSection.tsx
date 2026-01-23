@@ -1,38 +1,54 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/app/landing/components/ui/card";
 import { useScrollAnimation } from "@/app/landing/hooks/useScrollAnimation";
+import {
+  BarChartIcon,
+  ScaleIcon,
+  ClockIcon,
+  DoorIcon,
+  MoneyWingsIcon,
+} from "@/app/landing/components/ui/AnimatedProblemIcons";
 
-const problems = [
+type IconComponent = typeof BarChartIcon;
+
+const problems: Array<{
+  title: string;
+  description: string;
+  IconComponent: IconComponent;
+}> = [
   {
     title: "Manual Calculation Errors",
     description: "Hours spent on spreadsheets leading to countless mistakes and frustrated staff questioning accuracy.",
-    icon: "📊",
+    IconComponent: BarChartIcon,
   },
   {
     title: "Wage Disputes",
     description: "Constant questions about distribution fairness creating tension, mistrust, and operational friction.",
-    icon: "⚖️",
+    IconComponent: ScaleIcon,
   },
   {
     title: "Wasted Managerial Bandwidth",
     description: "Managers spending 2+ hours per shift on tip math instead of focusing on operations and guest experience.",
-    icon: "⏱️",
+    IconComponent: ClockIcon,
   },
   {
     title: "Staff Turnover",
     description: "Top performers leaving due to perceived inequity in tip distribution, costing you recruitment and training.",
-    icon: "🚪",
+    IconComponent: DoorIcon,
   },
   {
     title: "Payroll Integration Pain",
     description: "Manual data entry errors when transferring tip data to your payroll system, multiplying mistakes.",
-    icon: "💸",
+    IconComponent: MoneyWingsIcon,
   },
 ];
 
 function ProblemCard({ problem, index }: { problem: typeof problems[0]; index: number }) {
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.2 });
+  const { IconComponent } = problem;
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div
@@ -43,11 +59,13 @@ function ProblemCard({ problem, index }: { problem: typeof problems[0]; index: n
         transform: isVisible ? "translateY(0)" : "translateY(20px)",
         transitionDelay: `${index * 80}ms`,
       }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <Card className="border border-[#0B1F18]/8 hover:border-[#26D07C]/30 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(11,31,24,0.08)] bg-white group h-full">
         <CardContent className="p-5 md:p-6">
-          <div className="text-3xl md:text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
-            {problem.icon}
+          <div className="mb-3 group-hover:scale-105 transition-transform duration-300 inline-block">
+            <IconComponent isHovered={isHovered} />
           </div>
           <h3 className="font-display font-semibold text-base md:text-lg text-[#0B1F18] mb-2 leading-snug">
             {problem.title}

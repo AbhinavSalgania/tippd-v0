@@ -2,6 +2,7 @@
 
 import { ImageWithFallback } from "@/app/landing/components/figma/ImageWithFallback";
 import { Button } from "@/app/landing/components/ui/button";
+import { AnimatedCheckmark } from "@/app/landing/components/ui/AnimatedCheckmark";
 import { useParallax } from "@/app/landing/hooks/useParallax";
 
 const heroImage = "/landing/assets/tippdhero.png";
@@ -74,9 +75,7 @@ export function Hero() {
             >
               <div className="flex items-center gap-3 md:gap-4">
                 <div className="size-10 md:size-12 bg-gradient-to-br from-[#26D07C] to-[#1FB869] rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="size-5 md:size-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <AnimatedCheckmark className="size-5 md:size-6 text-white" />
                 </div>
                 <div>
                   <div className="font-semibold text-[#0B1F18] mb-0.5 text-sm md:text-base">Shift Closed</div>

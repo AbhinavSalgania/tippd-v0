@@ -1,9 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { ImageWithFallback } from "@/app/landing/components/figma/ImageWithFallback";
 import { Card, CardContent } from "@/app/landing/components/ui/card";
 import { useScrollAnimation } from "@/app/landing/hooks/useScrollAnimation";
 import { useCountAnimation } from "@/app/landing/hooks/useCountAnimation";
+import {
+  EyeBenefitIcon,
+  CheckmarkIcon,
+  ChartUpIcon,
+} from "@/app/landing/components/ui/AnimatedBenefitIcons";
 
 const employeeDashboard = "/landing/assets/employee-dashboard.png";
 
@@ -19,6 +25,30 @@ function BenefitStatCard({ value, suffix, label, isNumber = true }: { value: num
         <div className="text-sm md:text-[15px] text-[#0B1F18]/70 font-medium">{label}</div>
       </CardContent>
     </Card>
+  );
+}
+
+function BenefitItem({ icon: IconComponent, title, description }: { icon: typeof EyeBenefitIcon; title: string; description: string }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      className="flex gap-3 md:gap-4"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="flex-shrink-0 size-10 md:size-11 rounded-xl bg-[#E3F5EC] flex items-center justify-center shadow-sm overflow-hidden">
+        <IconComponent isHovered={isHovered} />
+      </div>
+      <div>
+        <h3 className="font-display font-semibold text-base md:text-lg text-[#0B1F18] mb-1.5 leading-snug">
+          {title}
+        </h3>
+        <p className="text-[#0B1F18]/65 leading-relaxed text-sm md:text-[15px]">
+          {description}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -79,47 +109,21 @@ export function EmployeeBenefitSection() {
             </div>
 
             <div className="space-y-4 md:space-y-5">
-              <div className="flex gap-3 md:gap-4">
-                <div className="flex-shrink-0 size-10 md:size-11 rounded-xl bg-[#E3F5EC] flex items-center justify-center text-lg md:text-xl shadow-sm">
-                  👁️
-                </div>
-                <div>
-                  <h3 className="font-display font-semibold text-base md:text-lg text-[#0B1F18] mb-1.5 leading-snug">
-                    Complete Transparency
-                  </h3>
-                  <p className="text-[#0B1F18]/65 leading-relaxed text-sm md:text-[15px]">
-                    Staff can see their individual tip breakdown anytime, eliminating questions and building confidence in your management.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 md:gap-4">
-                <div className="flex-shrink-0 size-10 md:size-11 rounded-xl bg-[#E3F5EC] flex items-center justify-center text-lg md:text-xl shadow-sm">
-                  ✅
-                </div>
-                <div>
-                  <h3 className="font-display font-semibold text-base md:text-lg text-[#0B1F18] mb-1.5 leading-snug">
-                    Zero Disputes
-                  </h3>
-                  <p className="text-[#0B1F18]/65 leading-relaxed text-sm md:text-[15px]">
-                    No more "why did I get less than yesterday?" Mathematical clarity means zero arguments at shift end.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 md:gap-4">
-                <div className="flex-shrink-0 size-10 md:size-11 rounded-xl bg-[#E3F5EC] flex items-center justify-center text-lg md:text-xl shadow-sm">
-                  📈
-                </div>
-                <div>
-                  <h3 className="font-display font-semibold text-base md:text-lg text-[#0B1F18] mb-1.5 leading-snug">
-                    Higher Retention
-                  </h3>
-                  <p className="text-[#0B1F18]/65 leading-relaxed text-sm md:text-[15px]">
-                    Fair, transparent tip distribution increases retention rates by 40% on average. Happy staff = better service.
-                  </p>
-                </div>
-              </div>
+              <BenefitItem
+                icon={EyeBenefitIcon}
+                title="Complete Transparency"
+                description="Staff can see their individual tip breakdown anytime, eliminating questions and building confidence in your management."
+              />
+              <BenefitItem
+                icon={CheckmarkIcon}
+                title="Zero Disputes"
+                description='No more "why did I get less than yesterday?" Mathematical clarity means zero arguments at shift end.'
+              />
+              <BenefitItem
+                icon={ChartUpIcon}
+                title="Higher Retention"
+                description="Fair, transparent tip distribution increases retention rates by 40% on average. Happy staff = better service."
+              />
             </div>
 
             <Card className="bg-gradient-to-br from-[#26D07C]/10 to-[#D4F49C]/10 border border-[#26D07C]/25 shadow-sm">

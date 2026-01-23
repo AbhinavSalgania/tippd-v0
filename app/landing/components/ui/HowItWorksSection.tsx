@@ -1,31 +1,46 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/app/landing/components/ui/card";
 import { useScrollAnimation } from "@/app/landing/hooks/useScrollAnimation";
+import {
+  PlugIcon,
+  GearIcon,
+  BoltIcon,
+} from "@/app/landing/components/ui/AnimatedHowItWorksIcons";
 
-const steps = [
+type IconComponent = typeof PlugIcon;
+
+const steps: Array<{
+  number: string;
+  title: string;
+  description: string;
+  IconComponent: IconComponent;
+}> = [
   {
     number: "01",
     title: "Connect Your POS",
     description: "One-click integration with Toast, Square, Clover, or manual CSV upload. Takes less than 5 minutes to set up your first shift.",
-    icon: "🔌",
+    IconComponent: PlugIcon,
   },
   {
     number: "02",
     title: "Set Your Distribution Rules",
     description: "Define your tip pooling logic once: FOH/BOH splits, role-based percentages, and any house rules. We handle the rest mathematically.",
-    icon: "⚙️",
+    IconComponent: GearIcon,
   },
   {
     number: "03",
     title: "Automatic Calculations",
     description: "At shift end, enter total sales and tips. Tippd instantly calculates every employee's exact payout with full transparency and audit trail.",
-    icon: "⚡",
+    IconComponent: BoltIcon,
   },
 ];
 
 function StepCard({ step, index }: { step: typeof steps[0]; index: number }) {
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.2 });
+  const { IconComponent } = step;
+  const [isHovered, setIsHovered] = useState(false);
   const isEven = index % 2 === 0;
 
   return (
@@ -51,10 +66,16 @@ function StepCard({ step, index }: { step: typeof steps[0]; index: number }) {
         </div>
 
         {/* Content */}
-        <Card className="flex-1 border-0 shadow-[0_4px_20px_rgba(11,31,24,0.06)] hover:shadow-[0_8px_32px_rgba(11,31,24,0.1)] transition-shadow duration-300 bg-white">
+        <Card
+          className="flex-1 border-0 shadow-[0_4px_20px_rgba(11,31,24,0.06)] hover:shadow-[0_8px_32px_rgba(11,31,24,0.1)] transition-shadow duration-300 bg-white"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
           <CardContent className="p-6 md:p-7">
             <div className="flex items-start gap-4 mb-3">
-              <span className="text-4xl">{step.icon}</span>
+              <div className="flex-shrink-0">
+                <IconComponent isHovered={isHovered} />
+              </div>
               <h3 className="font-display font-bold text-2xl md:text-3xl text-[#0B1F18] leading-tight">
                 {step.title}
               </h3>

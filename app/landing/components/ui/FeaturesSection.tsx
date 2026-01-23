@@ -1,42 +1,58 @@
 "use client";
 
+import { useState } from "react";
 import { ImageWithFallback } from "@/app/landing/components/figma/ImageWithFallback";
 import { Card, CardContent } from "@/app/landing/components/ui/card";
 import { AnimatedStatCard } from "@/app/landing/components/ui/AnimatedStatCard";
 import { useScrollAnimation } from "@/app/landing/hooks/useScrollAnimation";
+import {
+  LightningIcon,
+  TargetIcon,
+  EyeIcon,
+  LockIcon,
+} from "@/app/landing/components/ui/AnimatedFeatureIcons";
 
 const serviceDayImage = "/landing/assets/service-day.png";
 const summaryImage = "/landing/assets/summary.png";
 
-const features = [
+type IconComponent = typeof LightningIcon;
+
+const features: Array<{
+  title: string;
+  description: string;
+  IconComponent: IconComponent;
+  span: string;
+}> = [
   {
     title: "Automated Reconciliation",
     description: "Enter sales and tips once. Get accurate payouts for all staff in seconds. Zero formulas, zero errors.",
-    icon: "⚡",
+    IconComponent: LightningIcon,
     span: "col-span-1",
   },
   {
     title: "Objective Distribution",
     description: "Rules-based pooling ensures mathematical fairness. No perception issues, no disputes.",
-    icon: "🎯",
+    IconComponent: TargetIcon,
     span: "col-span-1",
   },
   {
     title: "Granular Transparency",
     description: "Every employee sees exactly how their payout was calculated, building institutional trust.",
-    icon: "👁️",
+    IconComponent: EyeIcon,
     span: "col-span-1",
   },
   {
     title: "Audit-Proof Records",
     description: "Complete digital trail for IRS 8027 compliance, wage-hour defense, and payroll integration.",
-    icon: "🔒",
+    IconComponent: LockIcon,
     span: "col-span-1",
   },
 ];
 
 function FeatureCard({ feature, index }: { feature: typeof features[0]; index: number }) {
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.2 });
+  const { IconComponent } = feature;
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div
@@ -47,10 +63,14 @@ function FeatureCard({ feature, index }: { feature: typeof features[0]; index: n
         transform: isVisible ? "translateY(0)" : "translateY(20px)",
         transitionDelay: `${index * 80}ms`,
       }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <Card className="bg-white border-0 shadow-[0_2px_16px_rgba(11,31,24,0.06)] hover:shadow-[0_8px_30px_rgba(11,31,24,0.12)] transition-all duration-300 group h-full">
         <CardContent className="p-5 md:p-6">
-          <div className="text-3xl md:text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
+          <div className="mb-3 group-hover:scale-105 transition-transform duration-300 inline-block">
+            <IconComponent isHovered={isHovered} />
+          </div>
           <h3 className="font-display font-semibold text-base md:text-lg text-[#0B1F18] mb-2 leading-snug">
             {feature.title}
           </h3>
