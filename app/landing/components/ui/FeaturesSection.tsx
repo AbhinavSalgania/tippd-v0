@@ -1,5 +1,9 @@
+"use client";
+
 import { ImageWithFallback } from "@/app/landing/components/figma/ImageWithFallback";
 import { Card, CardContent } from "@/app/landing/components/ui/card";
+import { AnimatedStatCard } from "@/app/landing/components/ui/AnimatedStatCard";
+import { useScrollAnimation } from "@/app/landing/hooks/useScrollAnimation";
 
 const serviceDayImage = "/landing/assets/service-day.png";
 const summaryImage = "/landing/assets/summary.png";
@@ -31,15 +35,79 @@ const features = [
   },
 ];
 
+function FeatureCard({ feature, index }: { feature: typeof features[0]; index: number }) {
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.2 });
+
+  return (
+    <div
+      ref={ref}
+      className="transition-all duration-700 ease-out"
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(20px)",
+        transitionDelay: `${index * 80}ms`,
+      }}
+    >
+      <Card className="bg-white border-0 shadow-[0_2px_16px_rgba(11,31,24,0.06)] hover:shadow-[0_8px_30px_rgba(11,31,24,0.12)] transition-all duration-300 group h-full">
+        <CardContent className="p-5 md:p-6">
+          <div className="text-3xl md:text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
+          <h3 className="font-display font-semibold text-base md:text-lg text-[#0B1F18] mb-2 leading-snug">
+            {feature.title}
+          </h3>
+          <p className="text-[#0B1F18]/65 leading-relaxed text-sm md:text-[15px]">
+            {feature.description}
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function VisualCard({ title, description, image, alt, index }: { title: string; description: string; image: string; alt: string; index: number }) {
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.2 });
+
+  return (
+    <div
+      ref={ref}
+      className="transition-all duration-700 ease-out"
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(20px)",
+        transitionDelay: `${index * 100}ms`,
+      }}
+    >
+      <Card className="bg-white border-0 shadow-[0_4px_24px_rgba(11,31,24,0.08)] overflow-hidden hover:shadow-[0_8px_40px_rgba(11,31,24,0.12)] transition-shadow duration-300 h-full">
+        <CardContent className="p-0">
+          <div className="p-5 md:p-6 bg-[#E3F5EC]/50">
+            <h3 className="font-display font-semibold text-lg md:text-xl text-[#0B1F18] mb-1.5 leading-snug">
+              {title}
+            </h3>
+            <p className="text-[#0B1F18]/65 text-sm md:text-[15px] leading-relaxed">
+              {description}
+            </p>
+          </div>
+          <div className="relative">
+            <ImageWithFallback
+              src={image}
+              alt={alt}
+              className="w-full h-auto"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-20 md:py-32 bg-[#E3F5EC]/30">
+    <section id="features" className="py-12 md:py-16 bg-[#E3F5EC]/30">
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="font-display font-bold text-4xl md:text-5xl text-[#0B1F18] mb-6 leading-tight">
-            Set Your Rules. We Handle the Math.
+        <div className="text-center max-w-3xl mx-auto mb-8 md:mb-10">
+          <h2 className="font-display font-bold text-4xl md:text-5xl text-[#0B1F18] mb-4 leading-tight">
+            You Set the Rules. We Guarantee the Math.
           </h2>
-          <p className="text-xl text-[#0B1F18]/70 leading-relaxed">
+          <p className="text-base md:text-lg text-[#0B1F18]/70 leading-relaxed">
             Powerful automation designed specifically for multi-tier tip distribution
           </p>
         </div>
@@ -47,90 +115,40 @@ export function FeaturesSection() {
         {/* Bento Grid */}
         <div className="max-w-7xl mx-auto">
           {/* Top row - Feature cards */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 mb-4 md:mb-5">
             {features.map((feature, index) => (
-              <Card 
-                key={index}
-                className="bg-white border-0 shadow-lg hover:shadow-xl transition-all"
-              >
-                <CardContent className="p-6">
-                  <div className="text-4xl mb-4">{feature.icon}</div>
-                  <h3 className="font-display font-semibold text-lg text-[#0B1F18] mb-3">
-                    {feature.title}
-                  </h3>
-                  <p className="text-[#0B1F18]/60 leading-relaxed text-sm">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>
+              <FeatureCard key={index} feature={feature} index={index} />
             ))}
           </div>
 
           {/* Bottom row - Large visual cards */}
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Service Day Screenshot */}
-            <Card className="bg-white border-0 shadow-lg overflow-hidden">
-              <CardContent className="p-0">
-                <div className="p-6 bg-[#E3F5EC]/50">
-                  <h3 className="font-display font-semibold text-xl text-[#0B1F18] mb-2">
-                    Daily Workflow Dashboard
-                  </h3>
-                  <p className="text-[#0B1F18]/60">
-                    Enter shift data in under 2 minutes. Automatic calculations for FOH and BOH.
-                  </p>
-                </div>
-                <div className="relative">
-                  <ImageWithFallback
-                    src={serviceDayImage}
-                    alt="Service day entry interface"
-                    className="w-full h-auto"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Summary Export Screenshot */}
-            <Card className="bg-white border-0 shadow-lg overflow-hidden">
-              <CardContent className="p-0">
-                <div className="p-6 bg-[#E3F5EC]/50">
-                  <h3 className="font-display font-semibold text-xl text-[#0B1F18] mb-2">
-                    Payroll-Ready Exports
-                  </h3>
-                  <p className="text-[#0B1F18]/60">
-                    One-click TSV export for seamless integration with QuickBooks, ADP, and more.
-                  </p>
-                </div>
-                <div className="relative">
-                  <ImageWithFallback
-                    src={summaryImage}
-                    alt="Summary export interface"
-                    className="w-full h-auto"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid lg:grid-cols-2 gap-4 md:gap-5">
+            <VisualCard
+              title="Daily Workflow Dashboard"
+              description="Enter shift data in under 2 minutes. Automatic calculations for FOH and BOH."
+              image={serviceDayImage}
+              alt="Service day entry interface"
+              index={0}
+            />
+            <VisualCard
+              title="Payroll-Ready Exports"
+              description="One-click TSV export for seamless integration with QuickBooks, ADP, and more."
+              image={summaryImage}
+              alt="Summary export interface"
+              index={1}
+            />
           </div>
 
           {/* Stats row */}
-          <div className="grid md:grid-cols-3 gap-6 mt-6">
-            <Card className="bg-gradient-to-br from-[#26D07C] to-[#1FB869] border-0 shadow-lg text-white">
-              <CardContent className="p-6 text-center">
-                <div className="font-mono-data text-5xl font-bold mb-2">90%</div>
-                <div className="text-white/90 font-medium">Time Saved vs. Spreadsheets</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-[#D4F49C] to-[#C8E88F] border-0 shadow-lg">
-              <CardContent className="p-6 text-center">
-                <div className="font-mono-data text-5xl font-bold mb-2 text-[#0B1F18]">2 min</div>
-                <div className="text-[#0B1F18]/70 font-medium">Average Processing Time</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-2 border-[#0B1F18]/10 shadow-lg">
-              <CardContent className="p-6 text-center">
-                <div className="font-mono-data text-5xl font-bold mb-2 text-[#0B1F18]">100%</div>
-                <div className="text-[#0B1F18]/70 font-medium">IRS Compliant</div>
-              </CardContent>
-            </Card>
+          <div className="text-center mb-4">
+            <p className="text-xs md:text-sm font-semibold text-[#0B1F18]/40 uppercase tracking-wide">
+              What Our Customers Actually Experience
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4 md:gap-5">
+            <AnimatedStatCard value={90} suffix="%" label="Time Saved vs. Spreadsheets" variant="green" />
+            <AnimatedStatCard value={2} suffix=" min" label="Average Processing Time" variant="yellow" />
+            <AnimatedStatCard value={100} suffix="%" label="IRS Compliant" variant="white" />
           </div>
         </div>
       </div>

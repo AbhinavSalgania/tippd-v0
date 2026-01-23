@@ -1,34 +1,50 @@
+"use client";
+
 import { Button } from "@/app/landing/components/ui/button";
 import { Input } from "@/app/landing/components/ui/input";
+import { useCountAnimation } from "@/app/landing/hooks/useCountAnimation";
+
+function StatCard({ value, suffix, label }: { value: number; suffix: string; label: string }) {
+  const { ref, count } = useCountAnimation({ end: value, duration: 2000 });
+
+  return (
+    <div ref={ref}>
+      <div className="font-mono-data text-3xl md:text-4xl font-bold mb-1.5">
+        {count}{suffix}
+      </div>
+      <div className="text-[#0B1F18]/75 font-medium text-sm">{label}</div>
+    </div>
+  );
+}
 
 export function CTASection() {
   return (
-    <section className="py-20 md:py-32 bg-gradient-to-br from-[#26D07C] to-[#1FB869] text-[#0B1F18] relative overflow-hidden">
+    <section className="py-12 md:py-16 bg-gradient-to-br from-[#26D07C] to-[#1FB869] text-[#0B1F18] relative overflow-hidden">
       {/* Background pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(255,255,255,0.2),transparent_50%)] pointer-events-none"></div>
-      
+
       <div className="container mx-auto px-4 md:px-6 lg:px-8 relative">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-display font-bold text-4xl md:text-6xl mb-6 leading-tight">
+          <h2 className="font-display font-bold text-4xl md:text-5xl lg:text-6xl mb-4 md:mb-5 leading-tight">
             Reclaim Managerial Bandwidth
           </h2>
-          <p className="text-2xl text-[#0B1F18]/80 mb-12 leading-relaxed">
+          <p className="text-base md:text-lg lg:text-xl text-[#0B1F18]/80 mb-8 md:mb-10 leading-relaxed">
             Join 500+ restaurants that eliminated tip calculation headaches. Start your 14-day free trial today.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto mb-8">
-            <Input 
-              type="email" 
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 max-w-xl mx-auto mb-6 md:mb-8">
+            <Input
+              type="email"
               placeholder="Enter your email"
-              className="bg-white border-0 h-14 text-lg text-[#0B1F18] placeholder:text-[#0B1F18]/40 shadow-lg"
+              className="bg-white border-0 h-12 md:h-14 text-base md:text-lg text-[#0B1F18] placeholder:text-[#0B1F18]/40 shadow-[0_4px_20px_rgba(11,31,24,0.15)]"
             />
-            <Button 
-              size="lg" 
-              className="bg-[#0B1F18] text-white hover:bg-[#0B1F18]/90 h-14 px-8 whitespace-nowrap font-semibold shadow-lg"
+            <Button
+              size="lg"
+              className="bg-[#0B1F18] text-white hover:bg-[#0B1F18]/90 h-12 md:h-14 px-7 md:px-8 whitespace-nowrap font-semibold shadow-[0_4px_20px_rgba(11,31,24,0.25)] text-[15px] md:text-base"
             >
-              Start Free Trial 
+              Start Free Trial
               <svg
-                className="ml-2 size-5"
+                className="ml-2 size-4 md:size-5"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -43,24 +59,15 @@ export function CTASection() {
             </Button>
           </div>
 
-          <p className="text-[#0B1F18]/70 text-sm mb-16">
+          <p className="text-[#0B1F18]/70 text-sm mb-10 md:mb-12">
             No credit card required • 5-minute setup • Cancel anytime
           </p>
 
           {/* Stats grid */}
-          <div className="grid md:grid-cols-3 gap-8 pt-16 border-t border-[#0B1F18]/10">
-            <div>
-              <div className="font-mono-data text-5xl font-bold mb-2">2 min</div>
-              <div className="text-[#0B1F18]/70 font-medium">Average processing time</div>
-            </div>
-            <div>
-              <div className="font-mono-data text-5xl font-bold mb-2">500+</div>
-              <div className="text-[#0B1F18]/70 font-medium">Restaurants trust Tippd</div>
-            </div>
-            <div>
-              <div className="font-mono-data text-5xl font-bold mb-2">40%</div>
-              <div className="text-[#0B1F18]/70 font-medium">Average turnover reduction</div>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-6 pt-10 md:pt-12 border-t border-[#0B1F18]/10">
+            <StatCard value={2} suffix=" min" label="Average processing time" />
+            <StatCard value={500} suffix="+" label="Restaurants trust Tippd" />
+            <StatCard value={40} suffix="%" label="Average turnover reduction" />
           </div>
         </div>
       </div>

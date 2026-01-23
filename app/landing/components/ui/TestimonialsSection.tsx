@@ -1,4 +1,7 @@
+"use client";
+
 import { Card, CardContent } from "@/app/landing/components/ui/card";
+import { useScrollAnimation } from "@/app/landing/hooks/useScrollAnimation";
 
 const testimonials = [
   {
@@ -43,64 +46,79 @@ const testimonials = [
   },
 ];
 
+function TestimonialCard({ testimonial, index }: { testimonial: typeof testimonials[0]; index: number }) {
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.15 });
+
+  return (
+    <div
+      ref={ref}
+      className="transition-all duration-700 ease-out"
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(20px)",
+        transitionDelay: `${index * 100}ms`,
+      }}
+    >
+      <Card className="bg-white border border-[#0B1F18]/8 hover:border-[#26D07C]/30 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(11,31,24,0.08)] group h-full">
+        <CardContent className="p-5 md:p-6">
+          {/* Highlight badge */}
+          <div className="inline-flex px-2.5 py-1 bg-[#D4F49C] rounded-full text-xs font-semibold text-[#0B1F18] mb-3">
+            {testimonial.highlight}
+          </div>
+
+          {/* Quote */}
+          <p className="text-[#0B1F18]/75 leading-relaxed mb-5 italic text-sm md:text-[15px]">
+            "{testimonial.quote}"
+          </p>
+
+          {/* Author */}
+          <div className="pt-3 border-t border-[#0B1F18]/5">
+            <div className="font-display font-semibold text-[#0B1F18] text-sm md:text-[15px]">
+              {testimonial.name}
+            </div>
+            <div className="text-xs md:text-sm text-[#0B1F18]/65">
+              {testimonial.role} • {testimonial.restaurant}
+            </div>
+            <div className="text-xs text-[#0B1F18]/45 mt-0.5">
+              {testimonial.location}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function TestimonialsSection() {
   return (
-    <section className="py-20 md:py-32 bg-white">
+    <section className="py-12 md:py-16 bg-white">
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="font-display font-bold text-4xl md:text-5xl text-[#0B1F18] mb-6 leading-tight">
+        <div className="text-center max-w-3xl mx-auto mb-8 md:mb-10">
+          <h2 className="font-display font-bold text-4xl md:text-5xl text-[#0B1F18] mb-4 leading-tight">
             Trusted by Restaurant Managers Nationwide
           </h2>
-          <p className="text-xl text-[#0B1F18]/70 leading-relaxed">
+          <p className="text-base md:text-lg text-[#0B1F18]/70 leading-relaxed">
             Real results from real operators who eliminated tip calculation headaches
           </p>
         </div>
 
         {/* Masonry-style grid */}
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {testimonials.map((testimonial, index) => (
-              <Card 
-                key={index}
-                className="bg-white border-2 border-[#0B1F18]/5 hover:border-[#26D07C]/30 transition-all hover:shadow-xl"
-              >
-                <CardContent className="p-6">
-                  {/* Highlight badge */}
-                  <div className="inline-flex px-3 py-1 bg-[#D4F49C] rounded-full text-xs font-semibold text-[#0B1F18] mb-4">
-                    {testimonial.highlight}
-                  </div>
-
-                  {/* Quote */}
-                  <p className="text-[#0B1F18]/80 leading-relaxed mb-6 italic">
-                    "{testimonial.quote}"
-                  </p>
-
-                  {/* Author */}
-                  <div className="pt-4 border-t border-[#0B1F18]/5">
-                    <div className="font-display font-semibold text-[#0B1F18]">
-                      {testimonial.name}
-                    </div>
-                    <div className="text-sm text-[#0B1F18]/60">
-                      {testimonial.role} • {testimonial.restaurant}
-                    </div>
-                    <div className="text-xs text-[#0B1F18]/40 mt-1">
-                      {testimonial.location}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <TestimonialCard key={index} testimonial={testimonial} index={index} />
             ))}
           </div>
         </div>
 
         {/* Social proof bar */}
-        <div className="mt-20 text-center">
-          <p className="text-sm font-semibold text-[#0B1F18]/40 uppercase tracking-wide mb-6">
+        <div className="mt-12 md:mt-16 text-center">
+          <p className="text-xs md:text-sm font-semibold text-[#0B1F18]/40 uppercase tracking-wide mb-4 md:mb-5">
             Deep-Stack Integration With
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
+          <div className="flex flex-wrap justify-center items-center gap-5 md:gap-7 lg:gap-10">
             {["Toast POS", "Square", "Clover", "Lightspeed", "QuickBooks", "ADP"].map((brand) => (
-              <span key={brand} className="text-[#0B1F18]/30 font-semibold text-base">
+              <span key={brand} className="text-[#0B1F18]/30 font-semibold text-sm md:text-base">
                 {brand}
               </span>
             ))}

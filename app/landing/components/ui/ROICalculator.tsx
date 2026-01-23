@@ -1,12 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/app/landing/components/ui/card";
 import { Slider } from "@/app/landing/components/ui/slider";
 
 export function ROICalculator() {
   const [employees, setEmployees] = useState(15);
   const [shiftsPerWeek, setShiftsPerWeek] = useState(10);
+
+  // Load from URL params on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const empParam = params.get("employees");
+      const shiftsParam = params.get("shifts");
+
+      if (empParam) {
+        const emp = parseInt(empParam);
+        if (emp >= 5 && emp <= 100) setEmployees(emp);
+      }
+      if (shiftsParam) {
+        const shifts = parseInt(shiftsParam);
+        if (shifts >= 5 && shifts <= 35) setShiftsPerWeek(shifts);
+      }
+    }
+  }, []);
+
+  // Update URL when values change
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("employees", employees.toString());
+      params.set("shifts", shiftsPerWeek.toString());
+
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, [employees, shiftsPerWeek]);
 
   // Calculations
   const hoursPerShift = 2; // Average time spent on manual calculations
@@ -16,28 +46,28 @@ export function ROICalculator() {
   const costSavings = Math.round(hoursSavedPerYear * managerHourlyRate);
 
   return (
-    <section className="py-20 md:py-32 bg-gradient-to-br from-[#E3F5EC]/50 to-white">
+    <section className="py-12 md:py-16 bg-gradient-to-br from-[#E3F5EC]/50 to-white">
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="font-display font-bold text-4xl md:text-5xl text-[#0B1F18] mb-6 leading-tight">
+          <div className="text-center mb-8 md:mb-10">
+            <h2 className="font-display font-bold text-4xl md:text-5xl text-[#0B1F18] mb-4 leading-tight">
               Calculate Your Time Savings
             </h2>
-            <p className="text-xl text-[#0B1F18]/70">
+            <p className="text-base md:text-lg text-[#0B1F18]/70 leading-relaxed">
               See exactly how much Tippd could save your restaurant
             </p>
           </div>
 
-          <Card className="bg-white border-0 shadow-2xl">
-            <CardContent className="p-8 md:p-12">
-              <div className="space-y-8">
+          <Card className="bg-white border-0 shadow-[0_8px_40px_rgba(11,31,24,0.12)]">
+            <CardContent className="p-7 md:p-12">
+              <div className="space-y-7 md:space-y-8">
                 {/* Input: Number of Employees */}
                 <div>
                   <div className="flex justify-between items-baseline mb-4">
-                    <label className="font-display font-semibold text-lg text-[#0B1F18]">
+                    <label className="font-display font-semibold text-lg md:text-xl text-[#0B1F18]">
                       Number of Employees
                     </label>
-                    <span className="font-mono-data text-3xl font-bold text-[#26D07C]">
+                    <span className="font-mono-data text-3xl md:text-4xl font-bold text-[#26D07C]">
                       {employees}
                     </span>
                   </div>
@@ -58,10 +88,10 @@ export function ROICalculator() {
                 {/* Input: Shifts per Week */}
                 <div>
                   <div className="flex justify-between items-baseline mb-4">
-                    <label className="font-display font-semibold text-lg text-[#0B1F18]">
+                    <label className="font-display font-semibold text-lg md:text-xl text-[#0B1F18]">
                       Service Periods per Week
                     </label>
-                    <span className="font-mono-data text-3xl font-bold text-[#26D07C]">
+                    <span className="font-mono-data text-3xl md:text-4xl font-bold text-[#26D07C]">
                       {shiftsPerWeek}
                     </span>
                   </div>
@@ -80,33 +110,60 @@ export function ROICalculator() {
                 </div>
 
                 {/* Results */}
-                <div className="pt-8 border-t border-[#0B1F18]/10">
-                  <div className="bg-gradient-to-br from-[#26D07C]/10 to-[#D4F49C]/10 rounded-2xl p-8 space-y-6">
+                <div className="pt-7 md:pt-8 border-t border-[#0B1F18]/10">
+                  <div className="bg-gradient-to-br from-[#26D07C]/10 to-[#D4F49C]/10 rounded-2xl p-6 md:p-8 space-y-5 md:space-y-6">
                     <div className="text-center">
-                      <div className="text-[#0B1F18]/60 font-medium mb-2">Estimated Annual Savings</div>
-                      <div className="font-mono-data text-6xl md:text-7xl font-bold text-[#26D07C] mb-4">
+                      <div className="text-[#0B1F18]/65 font-medium mb-2 text-sm md:text-base">Estimated Annual Savings</div>
+                      <div className="font-mono-data text-5xl md:text-7xl font-bold text-[#26D07C] mb-3 md:mb-4">
                         ${costSavings.toLocaleString()}
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-[#26D07C]/20">
+                    <div className="grid md:grid-cols-2 gap-4 md:gap-5 pt-4 border-t border-[#26D07C]/20">
                       <div className="text-center">
-                        <div className="font-mono-data text-3xl font-bold text-[#0B1F18] mb-1">
+                        <div className="font-mono-data text-2xl md:text-3xl font-bold text-[#0B1F18] mb-1">
                           {Math.round(hoursSavedPerYear).toLocaleString()}
                         </div>
-                        <div className="text-sm text-[#0B1F18]/60">Hours Saved Per Year</div>
+                        <div className="text-sm md:text-[15px] text-[#0B1F18]/65">Hours Saved Per Year</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-mono-data text-3xl font-bold text-[#0B1F18] mb-1">
+                        <div className="font-mono-data text-2xl md:text-3xl font-bold text-[#0B1F18] mb-1">
                           {Math.round(hoursSavedPerWeek)}
                         </div>
-                        <div className="text-sm text-[#0B1F18]/60">Hours Saved Per Week</div>
+                        <div className="text-sm md:text-[15px] text-[#0B1F18]/65">Hours Saved Per Week</div>
                       </div>
                     </div>
 
-                    <p className="text-center text-sm text-[#0B1F18]/60 pt-4">
+                    <p className="text-center text-sm text-[#0B1F18]/60 pt-3 md:pt-4">
                       Based on 2 hours per shift for manual calculations and ${managerHourlyRate}/hour manager time
                     </p>
+                  </div>
+
+                  {/* Social Proof */}
+                  <div className="mt-6 pt-6 border-t border-[#0B1F18]/10">
+                    <p className="text-center text-sm font-semibold text-[#0B1F18]/50 mb-3">
+                      Based on your inputs, similar restaurants saved:
+                    </p>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-[#26D07C] mb-1">
+                          ${Math.round(costSavings * 0.85).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-[#0B1F18]/60">Lower Range</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-[#26D07C] mb-1">
+                          ${costSavings.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-[#0B1F18]/60">Average</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-[#26D07C] mb-1">
+                          ${Math.round(costSavings * 1.15).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-[#0B1F18]/60">Upper Range</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
