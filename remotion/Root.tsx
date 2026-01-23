@@ -1,17 +1,17 @@
 import React from 'react';
 import {Composition} from 'remotion';
-import {MyComposition} from './Composition';
+import {TippdVideo} from './TippdVideo';
  
 export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Composition
-        id="Empty"
-        component={MyComposition}
-        durationInFrames={60}
+        id="TippdVideo"
+        component={TippdVideo}
+        durationInFrames={420}
         fps={30}
-        width={1280}
-        height={720}
+        width={1080}
+        height={1920}
       />
     </>
   );
