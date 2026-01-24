@@ -138,33 +138,6 @@ export function ROICalculator() {
                       Based on 2 hours per shift for manual calculations and ${managerHourlyRate}/hour manager time
                     </p>
                   </div>
-
-                  {/* Social Proof */}
-                  <div className="mt-6 pt-6 border-t border-[#0B1F18]/10">
-                    <p className="text-center text-sm font-semibold text-[#0B1F18]/50 mb-3">
-                      Based on your inputs, similar restaurants saved:
-                    </p>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-[#26D07C] mb-1">
-                          ${Math.round(costSavings * 0.85).toLocaleString()}
-                        </div>
-                        <div className="text-xs text-[#0B1F18]/60">Lower Range</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-[#26D07C] mb-1">
-                          ${costSavings.toLocaleString()}
-                        </div>
-                        <div className="text-xs text-[#0B1F18]/60">Average</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-[#26D07C] mb-1">
-                          ${Math.round(costSavings * 1.15).toLocaleString()}
-                        </div>
-                        <div className="text-xs text-[#0B1F18]/60">Upper Range</div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </CardContent>

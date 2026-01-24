@@ -3,24 +3,40 @@ import { Badge } from "@/app/landing/components/ui/badge";
 
 const complianceFeatures = [
   {
-    icon: "🔒",
-    title: "IRS 8027 Compliance",
-    description: "Automatic tip reporting that meets federal requirements. Never worry about audit exposure again.",
+    icon: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+    title: "Permanent Records",
+    description: "Every shift calculation stored forever. When staff ask about a payout from last month, you have the answer.",
   },
   {
-    icon: "📋",
-    title: "Complete Audit Trails",
-    description: "Every transaction logged with timestamps, user actions, and calculation methodology for complete transparency.",
+    icon: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+    ),
+    title: "Secure Data",
+    description: "Bank-level encryption. Your tip data and employee info are protected the same way financial institutions handle sensitive records.",
   },
   {
-    icon: "⚖️",
-    title: "Labor Law Protection",
-    description: "Built-in safeguards for FLSA compliance, tip credit rules, and state-specific wage requirements.",
+    icon: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      </svg>
+    ),
+    title: "Export for Payroll",
+    description: "Download tip totals as a file you can hand to your accountant or import into your payroll system.",
   },
   {
-    icon: "🔐",
-    title: "Secure Data Handling",
-    description: "Bank-level encryption, SOC 2 compliance, and automatic backups protect your sensitive payroll data.",
+    icon: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    title: "Manager Approval Required",
+    description: "Nothing goes to staff until you review and approve it. You're always in control of what gets shared.",
   },
 ];
 
@@ -46,16 +62,16 @@ export function ComplianceSection() {
 
         <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto mb-12">
           {complianceFeatures.map((feature, index) => (
-            <Card 
+            <Card
               key={index}
-              className="bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-[#26D07C]/30 transition-all"
+              className="bg-[#1a3d2f] backdrop-blur-sm border border-[#26D07C]/20 hover:border-[#26D07C]/40 transition-all"
             >
-              <CardContent className="p-6">
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="font-display font-semibold text-xl text-white mb-3">
+              <CardContent className="p-6 md:p-7">
+                <div className="text-white/80 mb-4">{feature.icon}</div>
+                <h3 className="font-display font-bold text-lg md:text-xl text-white mb-2.5 leading-tight">
                   {feature.title}
                 </h3>
-                <p className="text-white/70 leading-relaxed">
+                <p className="text-white/70 leading-relaxed text-sm md:text-base">
                   {feature.description}
                 </p>
               </CardContent>

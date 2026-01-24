@@ -104,7 +104,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-white/40 text-sm">
-            Built with precision for restaurant operators
+            Built with precision for restaurant operators, by people who've been in the trenches.
           </p>
           
           <div className="flex gap-6">

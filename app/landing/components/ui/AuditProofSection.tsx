@@ -80,7 +80,7 @@ function StatCard({ label, value, sublabel }: { label: string; value: string; su
 
 export function AuditProofSection() {
   return (
-    <section className="py-12 md:py-16 bg-gradient-to-br from-[#0B1F18] to-[#0a2820] relative overflow-hidden">
+    <section id="compliance" className="py-12 md:py-16 bg-gradient-to-br from-[#0B1F18] to-[#0a2820] relative overflow-hidden">
       {/* Background decoration */}
       <div className="pointer-events-none absolute top-0 right-0 h-[500px] w-[500px] bg-[radial-gradient(circle_at_70%_30%,rgba(38,208,124,0.1),rgba(38,208,124,0)_60%)] blur-3xl" />
 

@@ -39,8 +39,9 @@ export function CTASection() {
               className="bg-white border-0 h-12 md:h-14 text-base md:text-lg text-[#0B1F18] placeholder:text-[#0B1F18]/40 shadow-[0_4px_20px_rgba(11,31,24,0.15)]"
             />
             <Button
+              variant="ghost"
               size="lg"
-              className="bg-[#0B1F18] text-white hover:bg-[#0B1F18]/90 h-12 md:h-14 px-7 md:px-8 whitespace-nowrap font-semibold shadow-[0_4px_20px_rgba(11,31,24,0.25)] text-[15px] md:text-base"
+              className="!bg-[#0B1F18] !text-white hover:!bg-[#0B1F18]/90 h-12 md:h-14 px-7 md:px-8 whitespace-nowrap font-semibold shadow-[0_4px_20px_rgba(11,31,24,0.25)] text-[15px] md:text-base"
             >
               Start Free Trial
               <svg

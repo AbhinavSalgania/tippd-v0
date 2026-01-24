@@ -129,12 +129,21 @@ export function EmployeeBenefitSection() {
             <Card className="bg-gradient-to-br from-[#26D07C]/10 to-[#D4F49C]/10 border border-[#26D07C]/25 shadow-sm">
               <CardContent className="p-4 md:p-5">
                 <div className="flex items-start gap-2.5 md:gap-3 mb-1.5">
+                  <svg
+                    className="w-5 h-5 text-[#26D07C] flex-shrink-0 mt-0.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                   <h4 className="font-display font-semibold text-base md:text-lg text-[#0B1F18] leading-snug">
                     You're Not Moving Money
                   </h4>
                 </div>
                 <p className="text-[#0B1F18]/70 leading-relaxed text-sm md:text-[15px]">
-                  Tippd is the system of record for tip calculations. You still handle payouts however you normally do (cash, Venmo, payroll add-on, etc.). Tippd just makes the math clear, defensible, and trusted.
+                  Tippd doesn't pay staff or run payroll. It's the system of record—the calculation happens here, you handle the rest however you normally do.
                 </p>
               </CardContent>
             </Card>

@@ -110,20 +110,6 @@ export function TestimonialsSection() {
             ))}
           </div>
         </div>
-
-        {/* Social proof bar */}
-        <div className="mt-12 md:mt-16 text-center">
-          <p className="text-xs md:text-sm font-semibold text-[#0B1F18]/40 uppercase tracking-wide mb-4 md:mb-5">
-            Deep-Stack Integration With
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-5 md:gap-7 lg:gap-10">
-            {["Toast POS", "Square", "Clover", "Lightspeed", "QuickBooks", "ADP"].map((brand) => (
-              <span key={brand} className="text-[#0B1F18]/30 font-semibold text-sm md:text-base">
-                {brand}
-              </span>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );

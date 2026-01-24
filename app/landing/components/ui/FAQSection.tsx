@@ -39,8 +39,17 @@ const faqs = [
   },
 ];
 
-function FAQItem({ faq, index }: { faq: typeof faqs[0]; index: number }) {
-  const [isOpen, setIsOpen] = useState(false);
+function FAQItem({
+  faq,
+  index,
+  isOpen,
+  onToggle
+}: {
+  faq: typeof faqs[0];
+  index: number;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.2 });
 
   return (
@@ -56,7 +65,7 @@ function FAQItem({ faq, index }: { faq: typeof faqs[0]; index: number }) {
       <Card className="border border-[#0B1F18]/10 hover:border-[#26D07C]/30 transition-all duration-300 hover:shadow-[0_4px_20px_rgba(11,31,24,0.08)] bg-white">
         <CardContent className="p-0">
           <button
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={onToggle}
             className="w-full text-left p-5 md:p-6 flex items-start justify-between gap-4"
           >
             <span className="font-display font-semibold text-base md:text-lg text-[#0B1F18] leading-snug pr-4">
@@ -96,8 +105,32 @@ function FAQItem({ faq, index }: { faq: typeof faqs[0]; index: number }) {
 }
 
 export function FAQSection() {
+  const [openItems, setOpenItems] = useState<Set<number>>(new Set());
+
+  const allOpen = openItems.size === faqs.length;
+
+  const toggleAll = () => {
+    if (allOpen) {
+      setOpenItems(new Set());
+    } else {
+      setOpenItems(new Set(faqs.map((_, i) => i)));
+    }
+  };
+
+  const toggleItem = (index: number) => {
+    setOpenItems(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
   return (
-    <section className="py-12 md:py-16 bg-gradient-to-b from-white to-[#E3F5EC]/30">
+    <section id="faq" className="py-12 md:py-16 bg-gradient-to-b from-white to-[#E3F5EC]/30">
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-10 md:mb-12">
           <div className="inline-block px-4 py-1.5 bg-[#D4F49C] rounded-full text-sm font-semibold text-[#0B1F18] mb-4">
@@ -106,35 +139,56 @@ export function FAQSection() {
           <h2 className="font-display font-bold text-4xl md:text-5xl text-[#0B1F18] mb-4 leading-tight">
             Common Questions
           </h2>
-          <p className="text-base md:text-lg text-[#0B1F18]/70 leading-relaxed">
+          <p className="text-base md:text-lg text-[#0B1F18]/70 leading-relaxed mb-3">
             Honest answers from people who've worked restaurant shifts
           </p>
+          <button
+            onClick={toggleAll}
+            className="inline-flex items-center gap-1.5 text-sm text-[#26D07C] hover:text-[#1FB869] font-medium transition-colors duration-200"
+          >
+            {allOpen ? (
+              <>
+                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+                Collapse all answers
+              </>
+            ) : (
+              <>
+                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                Expand all answers
+              </>
+            )}
+          </button>
         </div>
 
-        <div className="max-w-3xl mx-auto space-y-4">
-          {faqs.map((faq, index) => (
-            <FAQItem key={index} faq={faq} index={index} />
-          ))}
+        <div className="max-w-3xl mx-auto">
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <FAQItem
+                key={index}
+                faq={faq}
+                index={index}
+                isOpen={openItems.has(index)}
+                onToggle={() => toggleItem(index)}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Still have questions CTA */}
         <div className="text-center mt-10 md:mt-12">
-          <Card className="bg-gradient-to-br from-[#26D07C]/10 to-[#D4F49C]/10 border border-[#26D07C]/20 max-w-2xl mx-auto">
-            <CardContent className="p-6 md:p-8">
-              <h3 className="font-display font-bold text-xl md:text-2xl text-[#0B1F18] mb-3">
-                Still have questions?
-              </h3>
-              <p className="text-[#0B1F18]/70 mb-5">
-                Our team is here to help you get started. Schedule a 15-minute demo to see how Tippd can work for your restaurant.
-              </p>
-              <a
-                href="#"
-                className="inline-flex items-center justify-center h-11 rounded-full bg-[#26D07C] px-7 text-[#0B1F18] hover:bg-[#1FB869] font-semibold shadow-[0_8px_24px_rgba(38,208,124,0.3)] text-[15px] transition-all"
-              >
-                Schedule a Demo
-              </a>
-            </CardContent>
-          </Card>
+          <p className="text-[#0B1F18]/50 text-base mb-1.5">
+            Still have questions?
+          </p>
+          <a
+            href="mailto:hello@tippd.com"
+            className="inline-block text-[#26D07C] hover:text-[#1FB869] font-medium text-sm transition-colors duration-200"
+          >
+            Email us directly →
+          </a>
         </div>
       </div>
     </section>

@@ -18,7 +18,7 @@ export function Hero() {
             <div className="inline-block px-3 py-1 bg-[#E3F5EC] rounded-full text-xs font-semibold text-[#0B1F18]/70 border border-[#26D07C]/20">
               Built by operators, for operators
             </div>
-            <h1 className="max-w-[560px] font-display font-bold text-5xl md:text-6xl lg:text-7xl text-[#0B1F18] leading-[1.08] tracking-[-0.02em]">
+            <h1 className="max-w-[560px] font-display font-bold text-4xl md:text-5xl lg:text-6xl text-[#0B1F18] leading-[1.08] tracking-[-0.02em]">
               Your Single Source of Truth for Tip Distribution
             </h1>
             <p className="max-w-[540px] text-lg md:text-xl text-[#0B1F18]/70 leading-relaxed">
@@ -35,13 +35,20 @@ export function Hero() {
                 See It In Action
               </Button>
             </div>
-            <p className="text-sm text-[#0B1F18]/50 -mt-1">
-              Free for 14 days • No credit card • Manual entry works today
+            <p className="text-sm text-[#0B1F18]/50">
+              Free to try • 10-minute setup • No credit card
             </p>
-            <div className="pt-6 border-t border-[#0B1F18]/5">
-              <p className="text-xs font-semibold text-[#0B1F18]/50 uppercase tracking-wide mb-4">
-                POS Integrations (Toast, Square, Clover) coming soon—not required to get started
+            <div className="pt-4 border-t border-[#0B1F18]/5">
+              <p className="text-xs font-semibold text-[#0B1F18]/40 uppercase tracking-wide mb-3 pt-4">
+                Integrations Coming Soon
               </p>
+              <div className="flex flex-wrap items-center gap-6 md:gap-8">
+                {["Toast", "Square", "Clover", "Lightspeed"].map((pos) => (
+                  <span key={pos} className="text-[#0B1F18]/40 font-medium text-sm">
+                    {pos}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
           <div className="relative lg:pl-4">

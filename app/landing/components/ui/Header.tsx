@@ -18,14 +18,17 @@ export function Header() {
             <a href="#features" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition">
               Features
             </a>
-            <a href="#integrations" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition">
-              Integrations
+            <a href="#how-it-works" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition">
+              How It Works
             </a>
             <a href="#compliance" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition">
               Compliance
             </a>
             <a href="#pricing" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition">
               Pricing
+            </a>
+            <a href="#faq" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition">
+              FAQ
             </a>
           </nav>
 
