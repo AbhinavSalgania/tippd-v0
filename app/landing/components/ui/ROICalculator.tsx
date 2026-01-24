@@ -26,20 +26,27 @@ export function ROICalculator() {
     }
   }, []);
 
-  // Update URL when values change
+  // Update URL when values change (debounced to prevent crashes)
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window === "undefined") return;
+
+    const timeoutId = setTimeout(() => {
       const params = new URLSearchParams(window.location.search);
       params.set("employees", employees.toString());
       params.set("shifts", shiftsPerWeek.toString());
 
       const newUrl = `${window.location.pathname}?${params.toString()}`;
       window.history.replaceState({}, "", newUrl);
-    }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [employees, shiftsPerWeek]);
 
   // Calculations
-  const hoursPerShift = 2; // Average time spent on manual calculations
+  // Base time scales with employees: ~3 min per employee per shift for manual calculations
+  const minutesPerEmployeePerShift = 3;
+  const minutesPerShift = employees * minutesPerEmployeePerShift;
+  const hoursPerShift = minutesPerShift / 60;
   const hoursSavedPerWeek = shiftsPerWeek * hoursPerShift * 0.9; // 90% time saved
   const hoursSavedPerYear = hoursSavedPerWeek * 52;
   const managerHourlyRate = 35; // Average manager hourly rate
@@ -77,7 +84,6 @@ export function ROICalculator() {
                     min={5}
                     max={100}
                     step={5}
-                    className="[&_[role=slider]]:bg-[#26D07C] [&_[role=slider]]:border-[#26D07C]"
                   />
                   <div className="flex justify-between text-sm text-[#0B1F18]/50 mt-2">
                     <span>5</span>
@@ -101,7 +107,6 @@ export function ROICalculator() {
                     min={5}
                     max={35}
                     step={1}
-                    className="[&_[role=slider]]:bg-[#26D07C] [&_[role=slider]]:border-[#26D07C]"
                   />
                   <div className="flex justify-between text-sm text-[#0B1F18]/50 mt-2">
                     <span>5</span>
