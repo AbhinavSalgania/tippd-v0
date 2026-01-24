@@ -6,28 +6,36 @@ import { useScrollAnimation } from "@/app/landing/hooks/useScrollAnimation";
 
 const faqs = [
   {
-    question: "How long does it take to set up Tippd?",
-    answer: "Most restaurants are fully operational within 5 minutes. Connect your POS, set your tip distribution rules once, and you're ready to go. No lengthy training or complex configuration required.",
+    question: "Do I need POS integration to use Tippd?",
+    answer: "No. You can enter shift data manually in under 2 minutes. POS integrations (Toast, Square, Clover) are on the roadmap, but they're optional—not required to get started.",
   },
   {
-    question: "Does Tippd integrate with my existing POS system?",
-    answer: "Yes! We have one-click integrations with Toast, Square, Clover, and Lightspeed. You can also manually upload data via CSV if your POS isn't directly integrated yet.",
+    question: "Does Tippd pay my employees?",
+    answer: "No. Tippd is the system of record for tip calculations. You still handle payouts however you normally do (cash, Venmo, payroll add-on, etc.). Tippd just makes the math clear, defensible, and trusted.",
   },
   {
-    question: "What happens if there's a mistake in the calculation?",
-    answer: "Tippd's calculations are mathematically guaranteed to be accurate based on your rules. However, you can always review and adjust before finalizing. All changes are tracked in the audit trail for complete transparency.",
+    question: "What if there's a mistake in the calculation?",
+    answer: "You review and approve every result before staff sees it. If something's wrong, you can edit the shift and recalculate. The system stores the original and the corrections—full audit trail.",
   },
   {
-    question: "Is my tip data secure and compliant?",
-    answer: "Absolutely. We're SOC 2 Type II certified and fully compliant with IRS Form 8027 requirements. All data is encrypted in transit and at rest, and we never sell or share your information.",
+    question: "How long does setup take?",
+    answer: "About 10 minutes. Add your staff, set up your tip pool rules (percentages, points, whatever you use), and you're done. First shift takes 5 minutes. After that, it's routine.",
   },
   {
-    question: "Can employees see how their tips are calculated?",
-    answer: "Yes! Complete transparency is core to Tippd. Employees can log in anytime to see their exact tip breakdown, including how pooling percentages were applied and hours worked. This eliminates disputes before they start.",
+    question: "What if my tip structure is complicated?",
+    answer: "Most structures work fine. Point-based pools, weighted hourly splits, tiered support staff, bartender overrides—we've seen it. If you're not sure, reach out and we'll walk through your setup.",
   },
   {
-    question: "What if I have custom tip pooling rules?",
-    answer: "Tippd is designed to handle complex, multi-tier tip pooling scenarios. FOH/BOH splits, role-based percentages, seniority tiers — we've got you covered. Our team will help configure your exact rules during onboarding.",
+    question: "Can I try it before committing?",
+    answer: "Yes. 14-day trial. No credit card required. Set up your first shift and see if Tippd fits your operation. If it doesn't work for you, cancel anytime—no questions asked.",
+  },
+  {
+    question: "Do employees need accounts?",
+    answer: "Only if you want them to see their breakdowns. Staff can log in to its history and calculations, or you can just share results manually. They don't need access to use the system.",
+  },
+  {
+    question: "Is my data secure?",
+    answer: "Yes. Bank-level encryption (256-bit AES), SOC 2 Type II certified, and GDPR compliant. Your tip data and employee info are protected the same way financial institutions handle sensitive records.",
   },
 ];
 
@@ -96,14 +104,10 @@ export function FAQSection() {
             Questions?
           </div>
           <h2 className="font-display font-bold text-4xl md:text-5xl text-[#0B1F18] mb-4 leading-tight">
-            Frequently Asked Questions
+            Common Questions
           </h2>
           <p className="text-base md:text-lg text-[#0B1F18]/70 leading-relaxed">
-            Everything you need to know about Tippd. Can't find what you're looking for?{" "}
-            <a href="#" className="text-[#26D07C] font-semibold hover:underline">
-              Chat with our team
-            </a>
-            .
+            Honest answers from people who've worked restaurant shifts
           </p>
         </div>
 

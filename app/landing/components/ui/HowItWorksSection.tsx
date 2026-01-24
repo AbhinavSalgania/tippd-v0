@@ -19,20 +19,20 @@ const steps: Array<{
 }> = [
   {
     number: "01",
-    title: "Connect Your POS",
-    description: "One-click integration with Toast, Square, Clover, or manual CSV upload. Takes less than 5 minutes to set up your first shift.",
+    title: "Enter Shift Data",
+    description: "Type in your sales and tips. Takes 2 minutes. No POS connection needed—manual entry works perfectly. You control what goes in. Nothing automatic you can't verify.",
     IconComponent: PlugIcon,
   },
   {
     number: "02",
-    title: "Set Your Distribution Rules",
-    description: "Define your tip pooling logic once: FOH/BOH splits, role-based percentages, and any house rules. We handle the rest mathematically.",
+    title: "Apply Your House Rules",
+    description: "Set up your tip pool structure once. Point systems, hourly splits, support staff percentages—whatever you use today. The math happens instantly. Same rules, every time.",
     IconComponent: GearIcon,
   },
   {
     number: "03",
-    title: "Automatic Calculations",
-    description: "At shift end, enter total sales and tips. Tippd instantly calculates every employee's exact payout with full transparency and audit trail.",
+    title: "Review and Share",
+    description: "See the breakdown before anyone else. Approve it. Staff can log in and see exactly how their tips were calculated. No more 'trust me, I did the math.'",
     IconComponent: BoltIcon,
   },
 ];
@@ -99,10 +99,10 @@ export function HowItWorksSection() {
             Simple Process
           </div>
           <h2 className="font-display font-bold text-4xl md:text-5xl text-[#0B1F18] mb-4 leading-tight">
-            How Tippd Works
+            How It Works
           </h2>
           <p className="text-base md:text-lg text-[#0B1F18]/70 leading-relaxed">
-            From setup to payout in three simple steps. No complex training required.
+            Three steps. Same process every shift. No surprises.
           </p>
         </div>
 

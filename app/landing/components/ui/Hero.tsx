@@ -16,10 +16,10 @@ export function Hero() {
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           <div className="space-y-6 md:space-y-7 lg:pr-6">
             <h1 className="max-w-[560px] font-display font-bold text-5xl md:text-6xl lg:text-7xl text-[#0B1F18] leading-[1.08] tracking-[-0.02em]">
-              The Financial Operating System for Hospitality
+              Your Single Source of Truth for Tip Distribution
             </h1>
             <p className="max-w-[540px] text-lg md:text-xl text-[#0B1F18]/70 leading-relaxed">
-              Stop losing your best staff to tip disputes. Mathematical fairness that employees trust and managers love.
+              Calculate tips correctly. Build trust through transparency. Stop arguing about who earned what. Built for operators who do tip-outs on paper.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 pt-0">
               <Button className="h-11 rounded-full bg-[#26D07C] px-7 text-[#0B1F18] hover:bg-[#1FB869] font-semibold shadow-[0_8px_24px_rgba(38,208,124,0.3)] text-[15px]">
@@ -33,19 +33,12 @@ export function Hero() {
               </Button>
             </div>
             <p className="text-sm text-[#0B1F18]/50 -mt-1">
-              No credit card required • Set up in 5 minutes • Cancel anytime
+              Free for 14 days • No credit card • Manual entry works today
             </p>
             <div className="pt-6 border-t border-[#0B1F18]/5">
               <p className="text-xs font-semibold text-[#0B1F18]/50 uppercase tracking-wide mb-4">
-                Deep-Stack Integration With
+                POS Integrations (Toast, Square, Clover) coming soon—not required to get started
               </p>
-              <div className="flex flex-wrap items-center gap-6 md:gap-8">
-                {["Toast", "Square", "Clover", "Lightspeed"].map((pos) => (
-                  <span key={pos} className="text-[#0B1F18]/40 font-semibold text-sm">
-                    {pos}
-                  </span>
-                ))}
-              </div>
             </div>
           </div>
           <div className="relative lg:pl-4">

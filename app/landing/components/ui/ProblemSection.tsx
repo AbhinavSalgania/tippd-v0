@@ -19,29 +19,29 @@ const problems: Array<{
   IconComponent: IconComponent;
 }> = [
   {
-    title: "Manual Calculation Errors",
-    description: "Hours spent on spreadsheets leading to countless mistakes and frustrated staff questioning accuracy.",
-    IconComponent: BarChartIcon,
-  },
-  {
-    title: "Wage Disputes",
-    description: "Constant questions about distribution fairness creating tension, mistrust, and operational friction.",
-    IconComponent: ScaleIcon,
-  },
-  {
-    title: "Wasted Managerial Bandwidth",
-    description: "Managers spending 2+ hours per shift on tip math instead of focusing on operations and guest experience.",
+    title: "Tip-Outs Take Too Long",
+    description: "You're doing math on a napkin after close when you should be going home. Every shift feels the same way.",
     IconComponent: ClockIcon,
   },
   {
-    title: "Staff Turnover",
-    description: "Top performers leaving due to perceived inequity in tip distribution, costing you recruitment and training.",
-    IconComponent: DoorIcon,
+    title: "Staff Don't Trust the Numbers",
+    description: '"Why did I make less than last Tuesday?" becomes a nightly conversation because there\'s no clear record.',
+    IconComponent: ScaleIcon,
   },
   {
-    title: "Payroll Integration Pain",
-    description: "Manual data entry errors when transferring tip data to your payroll system, multiplying mistakes.",
+    title: "Spreadsheets Break",
+    description: "One wrong formula and everyone's payout is off. You can't throw away last week when someone complains.",
+    IconComponent: BarChartIcon,
+  },
+  {
+    title: "Inconsistent Rules",
+    description: "Different managers calculate tip-outs differently. Your rules change, and it creates friction.",
     IconComponent: MoneyWingsIcon,
+  },
+  {
+    title: "Turnover Gets Worse",
+    description: "Good servers leave because they don't believe the math. Training new staff costs more than fixing this.",
+    IconComponent: DoorIcon,
   },
 ];
 
@@ -87,13 +87,6 @@ export function ProblemSection() {
 
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-8 md:mb-10">
-          {/* Tension stat */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200/50 rounded-full mb-5">
-            <span className="text-red-600 font-semibold text-sm md:text-base">
-              Manual tip distribution is the #1 reason servers quit within 90 days
-            </span>
-          </div>
-
           <h2 className="font-display font-bold text-4xl md:text-5xl text-[#0B1F18] mb-4 leading-tight">
             Spreadsheets Are Costing You Your Best Staff
           </h2>

@@ -26,10 +26,10 @@ export function CTASection() {
       <div className="container mx-auto px-4 md:px-6 lg:px-8 relative">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="font-display font-bold text-4xl md:text-5xl lg:text-6xl mb-4 md:mb-5 leading-tight">
-            Reclaim Managerial Bandwidth
+            Try It. See If It Works for You.
           </h2>
           <p className="text-base md:text-lg lg:text-xl text-[#0B1F18]/80 mb-8 md:mb-10 leading-relaxed">
-            Join 500+ restaurants that eliminated tip calculation headaches. Start your 14-day free trial today.
+            No sales call required. No credit card. Set up your first shift and see if Tippd fits your operation.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4 max-w-xl mx-auto mb-6 md:mb-8">
@@ -60,14 +60,14 @@ export function CTASection() {
           </div>
 
           <p className="text-[#0B1F18]/70 text-sm mb-10 md:mb-12">
-            No credit card required • 5-minute setup • Cancel anytime
+            Free for 14 days • No credit card • Cancel anytime
           </p>
 
           {/* Stats grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-6 pt-10 md:pt-12 border-t border-[#0B1F18]/10">
-            <StatCard value={2} suffix=" min" label="Average processing time" />
-            <StatCard value={500} suffix="+" label="Restaurants trust Tippd" />
-            <StatCard value={40} suffix="%" label="Average turnover reduction" />
+            <StatCard value={2} suffix=" min" label="To enter a shift" />
+            <StatCard value={10} suffix=" min" label="To set up your account" />
+            <StatCard value={0} suffix="" label="Integrations required" />
           </div>
         </div>
       </div>

@@ -96,46 +96,45 @@ export function EmployeeBenefitSection() {
           >
             <div>
               <div className="inline-block px-4 py-1.5 bg-[#D4F49C] rounded-full text-sm font-semibold text-[#0B1F18] mb-4">
-                Your Team Will Love It Too
+                Staff Transparency
               </div>
 
               <h2 className="font-display font-bold text-4xl md:text-5xl text-[#0B1F18] mb-4 leading-tight">
-                Build Trust, Reduce Turnover, Keep Your Best Staff
+                When Staff Trust the Numbers, They Stay Longer
               </h2>
 
               <p className="text-base md:text-lg text-[#0B1F18]/70 leading-relaxed">
-                When your employees see exactly how their tips are calculated, they trust you more. And when they trust you, they stay longer.
+                Clear breakdowns stop the questions. Consistent calculations build confidence. Transparency turns arguments into trust.
               </p>
             </div>
 
             <div className="space-y-4 md:space-y-5">
               <BenefitItem
                 icon={EyeBenefitIcon}
-                title="Complete Transparency"
-                description="Staff can see their individual tip breakdown anytime, eliminating questions and building confidence in your management."
+                title="See Their Own Breakdown"
+                description="Staff can log in and see exactly how their tips were calculated. No more 'trust me, I did the math.'"
               />
               <BenefitItem
                 icon={CheckmarkIcon}
-                title="Zero Disputes"
-                description='No more "why did I get less than yesterday?" Mathematical clarity means zero arguments at shift end.'
+                title="Fewer Disputes"
+                description="The system shows the work. Point systems, hourly splits, support staff percentages—all visible. No perception that something's off."
               />
               <BenefitItem
                 icon={ChartUpIcon}
-                title="Higher Retention"
-                description="Fair, transparent tip distribution increases retention rates by 40% on average. Happy staff = better service."
+                title="Built-In Fairness"
+                description="The same rules apply every time. No manager variance, no perception that closing gets better tips than lunch."
               />
             </div>
 
             <Card className="bg-gradient-to-br from-[#26D07C]/10 to-[#D4F49C]/10 border border-[#26D07C]/25 shadow-sm">
               <CardContent className="p-4 md:p-5">
                 <div className="flex items-start gap-2.5 md:gap-3 mb-1.5">
-                  <span className="text-lg md:text-xl">💡</span>
                   <h4 className="font-display font-semibold text-base md:text-lg text-[#0B1F18] leading-snug">
-                    Staff Satisfaction = Better Service
+                    You're Not Moving Money
                   </h4>
                 </div>
-                <p className="text-[#0B1F18]/70 leading-relaxed text-sm md:text-[15px] pl-7 md:pl-8">
-                  Happy, trusted employees provide better customer experiences. Better service means higher tips and repeat customers. It's a compounding advantage.
+                <p className="text-[#0B1F18]/70 leading-relaxed text-sm md:text-[15px]">
+                  Tippd is the system of record for tip calculations. You still handle payouts however you normally do (cash, Venmo, payroll add-on, etc.). Tippd just makes the math clear, defensible, and trusted.
                 </p>
               </CardContent>
             </Card>

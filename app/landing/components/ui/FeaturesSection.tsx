@@ -24,26 +24,26 @@ const features: Array<{
   span: string;
 }> = [
   {
-    title: "Automated Reconciliation",
-    description: "Enter sales and tips once. Get accurate payouts for all staff in seconds. Zero formulas, zero errors.",
+    title: "Consistent Calculations",
+    description: "Your house rules, applied the same way every shift. No manager variance.",
     IconComponent: LightningIcon,
     span: "col-span-1",
   },
   {
-    title: "Objective Distribution",
-    description: "Rules-based pooling ensures mathematical fairness. No perception issues, no disputes.",
+    title: "Manager Approval",
+    description: "You review every result before staff sees it. Approve or edit—you control when it goes out.",
     IconComponent: TargetIcon,
     span: "col-span-1",
   },
   {
-    title: "Granular Transparency",
-    description: "Every employee sees exactly how their payout was calculated, building institutional trust.",
+    title: "Staff Transparency",
+    description: "Everyone logs in and sees exactly how their tips were calculated. Kills the \"how did you get that number?\" conversation.",
     IconComponent: EyeIcon,
     span: "col-span-1",
   },
   {
-    title: "Audit-Proof Records",
-    description: "Complete digital trail for IRS 8027 compliance, wage-hour defense, and payroll integration.",
+    title: "Audit Trail",
+    description: "Every shift generates a record you can show to staff, payroll, or your accountant. No more recreating the math months later.",
     IconComponent: LockIcon,
     span: "col-span-1",
   },
@@ -125,10 +125,10 @@ export function FeaturesSection() {
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-8 md:mb-10">
           <h2 className="font-display font-bold text-4xl md:text-5xl text-[#0B1F18] mb-4 leading-tight">
-            You Set the Rules. We Guarantee the Math.
+            The Single Source of Truth for Tips
           </h2>
           <p className="text-base md:text-lg text-[#0B1F18]/70 leading-relaxed">
-            Powerful automation designed specifically for multi-tier tip distribution
+            One system. Clear rules. No arguments.
           </p>
         </div>
 
@@ -145,7 +145,7 @@ export function FeaturesSection() {
           <div className="grid lg:grid-cols-2 gap-4 md:gap-5">
             <VisualCard
               title="Daily Workflow Dashboard"
-              description="Enter shift data in under 2 minutes. Automatic calculations for FOH and BOH."
+              description="Enter shift data in under 2 minutes. Review calculations for FOH and BOH before approving."
               image={serviceDayImage}
               alt="Service day entry interface"
               index={0}
@@ -160,10 +160,7 @@ export function FeaturesSection() {
           </div>
 
           {/* Stats row */}
-          <div className="text-center mb-4">
-            <p className="text-xs md:text-sm font-semibold text-[#0B1F18]/40 uppercase tracking-wide">
-              What Our Customers Actually Experience
-            </p>
+          <div className="text-center mb-4 mt-6">
           </div>
           <div className="grid md:grid-cols-3 gap-4 md:gap-5">
             <AnimatedStatCard value={90} suffix="%" label="Time Saved vs. Spreadsheets" variant="green" />
