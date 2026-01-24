@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function Footer() {
   return (
     <footer className="bg-[#0B1F18] text-white py-16">
@@ -24,24 +26,24 @@ export function Footer() {
             <h4 className="font-display font-semibold text-white mb-4">Product</h4>
             <ul className="space-y-3 text-sm">
               <li>
-                <a href="#features" className="text-white/60 hover:text-white transition cursor-pointer">
+                <Link href="/features" className="text-white/60 hover:text-white transition cursor-pointer">
                   Features
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#integrations" className="text-white/60 hover:text-white transition cursor-pointer">
+                <Link href="/integrations" className="text-white/60 hover:text-white transition cursor-pointer">
                   Integrations
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#pricing" className="text-white/60 hover:text-white transition cursor-pointer">
+                <Link href="/pricing" className="text-white/60 hover:text-white transition cursor-pointer">
                   Pricing
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-white/60 hover:text-white transition cursor-pointer">
+                <Link href="/api" className="text-white/60 hover:text-white transition cursor-pointer">
                   API Documentation
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -51,24 +53,34 @@ export function Footer() {
             <h4 className="font-display font-semibold text-white mb-4">Resources</h4>
             <ul className="space-y-3 text-sm">
               <li>
-                <a href="#" className="text-white/60 hover:text-white transition cursor-pointer">
+                <a
+                  href="https://www.dol.gov/agencies/whd/tipped-employees"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white/60 hover:text-white transition cursor-pointer"
+                >
                   Compliance Guide
                 </a>
               </li>
               <li>
-                <a href="#" className="text-white/60 hover:text-white transition cursor-pointer">
+                <a
+                  href="https://www.dol.gov/agencies/whd/minimum-wage/state"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white/60 hover:text-white transition cursor-pointer"
+                >
                   Tip Laws by State
                 </a>
               </li>
               <li>
-                <a href="#" className="text-white/60 hover:text-white transition cursor-pointer">
+                <Link href="/help" className="text-white/60 hover:text-white transition cursor-pointer">
                   Help Center
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-white/60 hover:text-white transition cursor-pointer">
+                <Link href="/blog" className="text-white/60 hover:text-white transition cursor-pointer">
                   Blog
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -78,24 +90,24 @@ export function Footer() {
             <h4 className="font-display font-semibold text-white mb-4">Company</h4>
             <ul className="space-y-3 text-sm">
               <li>
-                <a href="#" className="text-white/60 hover:text-white transition cursor-pointer">
+                <Link href="/about" className="text-white/60 hover:text-white transition cursor-pointer">
                   About Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-white/60 hover:text-white transition cursor-pointer">
+                <Link href="/careers" className="text-white/60 hover:text-white transition cursor-pointer">
                   Careers
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-white/60 hover:text-white transition cursor-pointer">
+                <Link href="/privacy" className="text-white/60 hover:text-white transition cursor-pointer">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-white/60 hover:text-white transition cursor-pointer">
+                <Link href="/terms" className="text-white/60 hover:text-white transition cursor-pointer">
                   Terms of Service
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
