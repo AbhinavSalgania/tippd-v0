@@ -10,7 +10,10 @@ const heroImage = "/landing/assets/tippdhero.png";
 export function Hero() {
   const cardParallax = useParallax({ speed: -0.05 });
   return (
-    <section className="relative overflow-hidden pt-20 md:pt-24 pb-12 md:pb-16 min-h-[85vh] md:min-h-[90vh] flex items-center bg-gradient-to-b from-[#E3F5EC]/45 to-white">
+    <section
+      id="hero"
+      className="relative overflow-hidden pt-20 md:pt-24 pb-12 md:pb-16 min-h-[85vh] md:min-h-[90vh] flex items-center bg-gradient-to-b from-[#E3F5EC]/45 to-white"
+    >
       <div className="pointer-events-none absolute -top-24 left-0 h-[600px] w-[600px] bg-[radial-gradient(circle_at_30%_20%,rgba(38,208,124,0.18),rgba(38,208,124,0)_60%)] blur-3xl" />
       <div className="container mx-auto px-4 md:px-6 lg:px-8 w-full">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">

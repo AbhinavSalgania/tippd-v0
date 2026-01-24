@@ -107,7 +107,9 @@ export default function AppHeader({ title, subtitle }) {
       <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-4 py-3">
         <div className="min-w-0 justify-self-start">
           <div className="flex items-baseline gap-2">
-            <div className="text-sm font-semibold text-zinc-900">Tippd</div>
+            <Link href="/#hero" className="text-sm font-semibold text-zinc-900">
+              Tippd
+            </Link>
             {title ? <div className="text-xs text-zinc-500">{title}</div> : null}
           </div>
           {subtitle ? <div className="truncate text-xs text-zinc-500">{subtitle}</div> : null}
