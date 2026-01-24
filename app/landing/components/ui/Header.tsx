@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/app/landing/components/ui/button";
 
 export function Header() {
@@ -15,31 +16,33 @@ export function Header() {
           
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition">
+            <a href="#features" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition cursor-pointer">
               Features
             </a>
-            <a href="#how-it-works" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition">
+            <a href="#how-it-works" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition cursor-pointer">
               How It Works
             </a>
-            <a href="#compliance" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition">
+            <a href="#compliance" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition cursor-pointer">
               Compliance
             </a>
-            <a href="#pricing" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition">
+            <a href="#pricing" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition cursor-pointer">
               Pricing
             </a>
-            <a href="#faq" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition">
+            <a href="#faq" className="text-sm font-medium text-[#0B1F18]/70 hover:text-[#0B1F18] transition cursor-pointer">
               FAQ
             </a>
           </nav>
 
           {/* Actions */}
           <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              className="hidden sm:inline-flex text-[#0B1F18]"
-            >
-              Login
-            </Button>
+            <Link href="/login">
+              <Button
+                variant="ghost"
+                className="hidden sm:inline-flex text-[#0B1F18]"
+              >
+                Login
+              </Button>
+            </Link>
             <Button 
               className="bg-[#26D07C] text-[#0B1F18] hover:bg-[#1FB869] font-semibold shadow-sm"
             >

@@ -66,7 +66,7 @@ function FAQItem({
         <CardContent className="p-0">
           <button
             onClick={onToggle}
-            className="w-full text-left p-5 md:p-6 flex items-start justify-between gap-4"
+            className="w-full text-left p-5 md:p-6 flex items-start justify-between gap-4 cursor-pointer"
           >
             <span className="font-display font-semibold text-base md:text-lg text-[#0B1F18] leading-snug pr-4">
               {faq.question}
@@ -144,7 +144,7 @@ export function FAQSection() {
           </p>
           <button
             onClick={toggleAll}
-            className="inline-flex items-center gap-1.5 text-sm text-[#26D07C] hover:text-[#1FB869] font-medium transition-colors duration-200"
+            className="inline-flex items-center gap-1.5 text-sm text-[#26D07C] hover:text-[#1FB869] font-medium transition-colors duration-200 cursor-pointer"
           >
             {allOpen ? (
               <>
@@ -185,7 +185,7 @@ export function FAQSection() {
           </p>
           <a
             href="mailto:hello@tippd.com"
-            className="inline-block text-[#26D07C] hover:text-[#1FB869] font-medium text-sm transition-colors duration-200"
+            className="inline-block text-[#26D07C] hover:text-[#1FB869] font-medium text-sm transition-colors duration-200 cursor-pointer"
           >
             Email us directly →
           </a>
