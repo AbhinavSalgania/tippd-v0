@@ -54,7 +54,7 @@ export function Footer() {
             <ul className="space-y-3 text-sm">
               <li>
                 <a
-                  href="https://www.dol.gov/agencies/whd/tipped-employees"
+                  href="https://www.canada.ca/en/services/jobs/workplace/federal-labour-standards.html"
                   target="_blank"
                   rel="noreferrer"
                   className="text-white/60 hover:text-white transition cursor-pointer"
@@ -64,12 +64,12 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="https://www.dol.gov/agencies/whd/minimum-wage/state"
+                  href="https://www.canada.ca/en/services/jobs/workplace/federally-regulated-industries.html"
                   target="_blank"
                   rel="noreferrer"
                   className="text-white/60 hover:text-white transition cursor-pointer"
                 >
-                  Tip Laws by State
+                  Tip Laws by Province
                 </a>
               </li>
               <li>

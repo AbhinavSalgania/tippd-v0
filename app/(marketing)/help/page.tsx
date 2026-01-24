@@ -65,11 +65,11 @@ export default function HelpPage() {
           <div className="rounded-2xl border border-[#26D07C]/20 bg-[#F5FBF8] p-8">
             <h2 className="text-xl font-display font-semibold text-[#0B1F18]">Compliance resources</h2>
             <p className="mt-2 text-sm text-[#0B1F18]/70">
-              These official resources can help you validate tipped employee rules and state-by-state guidance.
+              These official Canadian resources can help you validate tipped employee rules and province-by-province guidance.
             </p>
             <div className="mt-4 flex flex-col gap-3 md:flex-row">
               <a
-                href="https://www.dol.gov/agencies/whd/tipped-employees"
+                href="https://www.canada.ca/en/services/jobs/workplace/federal-labour-standards.html"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center justify-center rounded-md border border-[#26D07C]/30 bg-white px-4 py-2 text-sm font-semibold text-[#0B1F18] transition hover:border-[#26D07C]"
@@ -77,12 +77,12 @@ export default function HelpPage() {
                 Compliance Guide
               </a>
               <a
-                href="https://www.dol.gov/agencies/whd/minimum-wage/state"
+                href="https://www.canada.ca/en/services/jobs/workplace/federally-regulated-industries.html"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center justify-center rounded-md border border-[#26D07C]/30 bg-white px-4 py-2 text-sm font-semibold text-[#0B1F18] transition hover:border-[#26D07C]"
               >
-                Tip Laws by State
+                Tip Laws by Province
               </a>
             </div>
           </div>
