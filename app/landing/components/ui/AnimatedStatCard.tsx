@@ -25,7 +25,7 @@ export function AnimatedStatCard({ value, suffix = "%", label, variant = "white"
 
   return (
     <Card className={`${variantClasses[variant]} transition-shadow duration-300 ${className}`}>
-      <CardContent className="p-5 md:p-6 text-center">
+      <CardContent className="p-5 md:p-6 pt-6 md:pt-6 text-center">
         <div ref={ref} className={`font-mono-data text-4xl md:text-5xl font-bold mb-1.5 ${textColor}`}>
           {count}{suffix}
         </div>

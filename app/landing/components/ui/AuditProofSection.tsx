@@ -51,7 +51,7 @@ function FeatureCard({ icon, title, description, index }: { icon: string; title:
       onMouseLeave={() => setIsHovered(false)}
     >
       <Card className="bg-[#0B1F18]/40 border border-[#26D07C]/20 shadow-[0_4px_20px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(38,208,124,0.2)] transition-all duration-300 h-full backdrop-blur-sm">
-        <CardContent className="p-5 md:p-6">
+        <CardContent className="p-5 md:p-6 pt-6 md:pt-6">
           <div className="text-3xl mb-3">{icon}</div>
           <h3 className="font-display font-semibold text-base md:text-lg text-white mb-2 leading-snug">
             {title}

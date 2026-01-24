@@ -63,7 +63,7 @@ function ProblemCard({ problem, index }: { problem: typeof problems[0]; index: n
       onMouseLeave={() => setIsHovered(false)}
     >
       <Card className="border border-[#0B1F18]/8 hover:border-[#26D07C]/30 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(11,31,24,0.08)] bg-white group h-full">
-        <CardContent className="p-5 md:p-6">
+        <CardContent className="p-5 md:p-6 pt-6 md:pt-6">
           <div className="mb-3 group-hover:scale-105 transition-transform duration-300 inline-block">
             <IconComponent isHovered={isHovered} />
           </div>

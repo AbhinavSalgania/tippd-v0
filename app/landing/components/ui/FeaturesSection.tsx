@@ -67,7 +67,7 @@ function FeatureCard({ feature, index }: { feature: typeof features[0]; index: n
       onMouseLeave={() => setIsHovered(false)}
     >
       <Card className="bg-white border-0 shadow-[0_2px_16px_rgba(11,31,24,0.06)] hover:shadow-[0_8px_30px_rgba(11,31,24,0.12)] transition-all duration-300 group h-full">
-        <CardContent className="p-5 md:p-6">
+        <CardContent className="p-5 md:p-6 pt-6 md:pt-6">
           <div className="mb-3 group-hover:scale-105 transition-transform duration-300 inline-block">
             <IconComponent isHovered={isHovered} />
           </div>

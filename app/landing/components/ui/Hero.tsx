@@ -38,7 +38,7 @@ export function Hero() {
             <p className="text-sm text-[#0B1F18]/50">
               Free to try • 10-minute setup • No credit card
             </p>
-            <div className="pt-4 border-t border-[#0B1F18]/5">
+            <div className="pt-4 border-t border-[#0B1F18]/5 hidden lg:block">
               <p className="text-xs font-semibold text-[#0B1F18]/40 uppercase tracking-wide mb-3 pt-4">
                 Integrations Coming Soon
               </p>
@@ -85,6 +85,18 @@ export function Hero() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+          <div className="pt-4 border-t border-[#0B1F18]/5 lg:hidden">
+            <p className="text-xs font-semibold text-[#0B1F18]/40 uppercase tracking-wide mb-3 pt-4">
+              Integrations Coming Soon
+            </p>
+            <div className="flex flex-wrap items-center gap-6">
+              {["Toast", "Square", "Clover", "Lightspeed"].map((pos) => (
+                <span key={pos} className="text-[#0B1F18]/40 font-medium text-sm">
+                  {pos}
+                </span>
+              ))}
             </div>
           </div>
         </div>

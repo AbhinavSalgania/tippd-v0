@@ -43,7 +43,7 @@ function StepCard({ step, index }: { step: typeof steps[0]; index: number }) {
       }}
     >
       <Card className="border-0 bg-[#F7FAF8] shadow-none">
-        <CardContent className="p-8 md:p-10">
+        <CardContent className="p-8 md:p-10 pt-9 md:pt-10">
           <div className="flex items-start gap-6">
             {/* Number badge */}
             <div className="flex-shrink-0">

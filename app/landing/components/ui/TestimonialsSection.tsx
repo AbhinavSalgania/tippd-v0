@@ -60,7 +60,7 @@ function TestimonialCard({ testimonial, index }: { testimonial: typeof testimoni
       }}
     >
       <Card className="bg-white border border-[#0B1F18]/8 hover:border-[#26D07C]/30 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(11,31,24,0.08)] group h-full">
-        <CardContent className="p-5 md:p-6">
+        <CardContent className="p-5 md:p-6 pt-6 md:pt-6">
           {/* Highlight badge */}
           <div className="inline-flex px-2.5 py-1 bg-[#D4F49C] rounded-full text-xs font-semibold text-[#0B1F18] mb-3">
             {testimonial.highlight}

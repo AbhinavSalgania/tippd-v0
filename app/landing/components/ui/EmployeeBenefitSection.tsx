@@ -18,7 +18,7 @@ function BenefitStatCard({ value, suffix, label, isNumber = true }: { value: num
 
   return (
     <Card className="bg-[#E3F5EC] border-0 shadow-[0_2px_12px_rgba(11,31,24,0.04)]">
-      <CardContent className="p-5 md:p-6 text-center">
+      <CardContent className="p-5 md:p-6 pt-6 md:pt-6 text-center">
         <div ref={ref} className="font-mono-data text-3xl md:text-4xl font-bold text-[#26D07C] mb-1">
           {isNumber ? `${count}${suffix}` : value}
         </div>
@@ -127,7 +127,7 @@ export function EmployeeBenefitSection() {
             </div>
 
             <Card className="bg-gradient-to-br from-[#26D07C]/10 to-[#D4F49C]/10 border border-[#26D07C]/25 shadow-sm">
-              <CardContent className="p-4 md:p-5">
+              <CardContent className="p-4 md:p-5 pt-5 md:pt-5">
                 <div className="flex items-start gap-2.5 md:gap-3 mb-1.5">
                   <svg
                     className="w-5 h-5 text-[#26D07C] flex-shrink-0 mt-0.5"
