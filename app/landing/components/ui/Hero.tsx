@@ -15,11 +15,14 @@ export function Hero() {
       <div className="container mx-auto px-4 md:px-6 lg:px-8 w-full">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           <div className="space-y-6 md:space-y-7 lg:pr-6">
+            <div className="inline-block px-3 py-1 bg-[#E3F5EC] rounded-full text-xs font-semibold text-[#0B1F18]/70 border border-[#26D07C]/20">
+              Built by operators, for operators
+            </div>
             <h1 className="max-w-[560px] font-display font-bold text-5xl md:text-6xl lg:text-7xl text-[#0B1F18] leading-[1.08] tracking-[-0.02em]">
               Your Single Source of Truth for Tip Distribution
             </h1>
             <p className="max-w-[540px] text-lg md:text-xl text-[#0B1F18]/70 leading-relaxed">
-              Calculate tips correctly. Build trust through transparency. Stop arguing about who earned what. Built for operators who do tip-outs on paper.
+              Calculate tips consistently. Give your team transparency. Eliminate end-of-shift arguments.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 pt-0">
               <Button className="h-11 rounded-full bg-[#26D07C] px-7 text-[#0B1F18] hover:bg-[#1FB869] font-semibold shadow-[0_8px_24px_rgba(38,208,124,0.3)] text-[15px]">
@@ -27,7 +30,7 @@ export function Hero() {
               </Button>
               <Button
                 variant="ghost"
-                className="h-11 rounded-full border border-[#0B1F18]/20 px-7 text-[#0B1F18] hover:bg-[#0B1F18]/5 text-[15px]"
+                className="h-11 rounded-full border border-[#0B1F18]/20 px-7 text-[#0B1F18] hover:!bg-[#caed8c] text-[15px]"
               >
                 See It In Action
               </Button>

@@ -24,15 +24,15 @@ const features: Array<{
   span: string;
 }> = [
   {
-    title: "Consistent Calculations",
-    description: "Your house rules, applied the same way every shift. No manager variance.",
-    IconComponent: LightningIcon,
-    span: "col-span-1",
-  },
-  {
     title: "Manager Approval",
     description: "You review every result before staff sees it. Approve or edit—you control when it goes out.",
     IconComponent: TargetIcon,
+    span: "col-span-1",
+  },
+  {
+    title: "Consistent Calculations",
+    description: "Your house rules, applied the same way every shift. No manager variance.",
+    IconComponent: LightningIcon,
     span: "col-span-1",
   },
   {
@@ -152,7 +152,7 @@ export function FeaturesSection() {
             />
             <VisualCard
               title="Payroll-Ready Exports"
-              description="One-click TSV export for seamless integration with QuickBooks, ADP, and more."
+              description="Exports formatted for payroll systems like QuickBooks, ADP, and others."
               image={summaryImage}
               alt="Summary export interface"
               index={1}

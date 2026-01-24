@@ -80,8 +80,8 @@ export function EmployeeBenefitSection() {
 
             {/* Floating stat cards */}
             <div className="mt-5 md:mt-6 grid grid-cols-2 gap-4 md:gap-5">
-              <BenefitStatCard value={40} suffix="%" label="Lower Turnover" isNumber={true} />
-              <BenefitStatCard value="Zero" suffix="" label="Payout Disputes" isNumber={false} />
+              <BenefitStatCard value="Lower" suffix="" label="Turnover" isNumber={false} />
+              <BenefitStatCard value="Fewer" suffix="" label="Payout Disputes" isNumber={false} />
             </div>
           </div>
 

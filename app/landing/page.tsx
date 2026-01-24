@@ -6,6 +6,7 @@ import { FeaturesSection } from "@/app/landing/components/ui/FeaturesSection";
 import { ROICalculator } from "@/app/landing/components/ui/ROICalculator";
 import { TestimonialsSection } from "@/app/landing/components/ui/TestimonialsSection";
 import { EmployeeBenefitSection } from "@/app/landing/components/ui/EmployeeBenefitSection";
+import { AuditProofSection } from "@/app/landing/components/ui/AuditProofSection";
 import { PricingSection } from "@/app/landing/components/ui/PricingSection";
 import { FAQSection } from "@/app/landing/components/ui/FAQSection";
 import { CTASection } from "@/app/landing/components/ui/CTASection";
@@ -22,9 +23,10 @@ export default function LandingPage() {
         <ProblemSection />
         <HowItWorksSection />
         <FeaturesSection />
-        <ROICalculator />
-        <TestimonialsSection />
         <EmployeeBenefitSection />
+        <ROICalculator />
+        <AuditProofSection />
+        <TestimonialsSection />
         <PricingSection />
         <FAQSection />
         <CTASection />

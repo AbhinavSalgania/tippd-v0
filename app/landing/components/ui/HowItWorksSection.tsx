@@ -111,27 +111,6 @@ export function HowItWorksSection() {
             <StepCard key={index} step={step} index={index} />
           ))}
         </div>
-
-        {/* CTA */}
-        <div className="text-center mt-10 md:mt-12">
-          <p className="text-sm text-[#0B1F18]/50 mb-4">
-            Ready to see it in action?
-          </p>
-          <div className="inline-flex gap-3">
-            <a
-              href="#"
-              className="inline-flex items-center justify-center h-11 rounded-full bg-[#26D07C] px-7 text-[#0B1F18] hover:bg-[#1FB869] font-semibold shadow-[0_8px_24px_rgba(38,208,124,0.3)] text-[15px] transition-all"
-            >
-              Start Free Trial
-            </a>
-            <a
-              href="#"
-              className="inline-flex items-center justify-center h-11 rounded-full border border-[#0B1F18]/20 px-7 text-[#0B1F18] hover:bg-[#0B1F18]/5 text-[15px] transition-all"
-            >
-              Watch Demo
-            </a>
-          </div>
-        </div>
       </div>
     </section>
   );
