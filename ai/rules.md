@@ -1,8 +1,5 @@
 # AI Rules
 
-- Output must be minimal:
-  - Include a short summary
-  - Include a concise manual test checklist
 - This is a portfolio-quality project.
 
 Tippd helps restaurants calculate and distribute tips fairly and consistently.

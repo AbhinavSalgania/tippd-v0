@@ -8,10 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node lib/tipCalculator.test.mjs",
-    "publish:all": "node scripts/publishAllServicePeriods.mjs"
+    "publish:all": "node scripts/publishAllServicePeriods.mjs",
+    "remotion:preview": "remotion studio remotion/index.ts",
+    "remotion:render": "remotion render remotion/index.ts TippdVideo out/tippd-video.mp4"
   },
   "dependencies": {
     "@remotion/cli": "4.0.409",
+    "@remotion/transitions": "4.0.409",
     "@supabase/supabase-js": "^2.90.1",
     "next": "16.1.1",
     "react": "19.2.3",
