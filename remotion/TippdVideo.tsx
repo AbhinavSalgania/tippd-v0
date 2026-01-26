@@ -13,9 +13,17 @@ import { fade } from '@remotion/transitions/fade';
 // Import component files
 import { SpreadsheetChaos } from './components/SpreadsheetChaos';
 import { DashboardZen } from './components/DashboardZen';
+import { DashboardScreenshot } from './components/DashboardScreenshot';
 import { ShiftNotification } from './components/ShiftNotification';
+import { TipBreakdown } from './components/TipBreakdown';
 import { IPhoneMockup } from './components/IPhoneMockup';
+import { TrustStats } from './components/TrustStats';
 import { CTAEndCard } from './components/CTAEndCard';
+
+// Toggle to use real screenshot vs synthetic dashboard
+const USE_REAL_SCREENSHOT = true;
+// Toggle to use tip breakdown vs simple notification
+const USE_TIP_BREAKDOWN = true;
 
 // ============================================
 // DESIGN TOKENS
@@ -35,7 +43,7 @@ const FONTS = {
 };
 
 // ============================================
-// TIMELINE (30fps, 1080x1920 vertical) - POLISHED
+// TIMELINE (30fps, 1080x1920 vertical) - WITH TRUST STATS
 // ============================================
 // Scene 1 - Hook:        75 frames (2.5s) - let "broken" breathe
 // Transition: Wipe       20 frames (eased)
@@ -44,8 +52,10 @@ const FONTS = {
 // Scene 3 - Solution:    120 frames (4s) - tighter, no dead air
 // Transition: Slide      25 frames (with scale)
 // Scene 4 - Mobile:      90 frames (3s) - tighter post-checkmark
-// Transition: Fade       25 frames
-// Scene 5 - CTA:         105 frames (3.5s) - two full pulse cycles
+// Transition: Fade       20 frames
+// Scene 5 - Trust:       75 frames (2.5s) - credibility stats
+// Transition: Fade       20 frames
+// Scene 6 - CTA:         90 frames (3s) - pulse cycles
 
 // ============================================
 // MAIN COMPOSITION WITH TRANSITION SERIES
@@ -98,14 +108,25 @@ export const TippdVideo: React.FC = () => {
           <MobileSceneWrapper />
         </TransitionSeries.Sequence>
 
-        {/* Transition 4: Fade - slightly longer for smooth CTA entry */}
+        {/* Transition 4: Fade to trust stats */}
         <TransitionSeries.Transition
           presentation={fade()}
-          timing={linearTiming({ durationInFrames: 25 })}
+          timing={linearTiming({ durationInFrames: 20 })}
         />
 
-        {/* Scene 5: CTA - CTAEndCard - 105 frames (two full pulse cycles) */}
-        <TransitionSeries.Sequence durationInFrames={105}>
+        {/* Scene 5: Trust Stats - 75 frames (credibility beat) */}
+        <TransitionSeries.Sequence durationInFrames={75}>
+          <TrustStatsWrapper />
+        </TransitionSeries.Sequence>
+
+        {/* Transition 5: Fade to CTA */}
+        <TransitionSeries.Transition
+          presentation={fade()}
+          timing={linearTiming({ durationInFrames: 20 })}
+        />
+
+        {/* Scene 6: CTA - CTAEndCard - 90 frames */}
+        <TransitionSeries.Sequence durationInFrames={90}>
           <CTAWrapper />
         </TransitionSeries.Sequence>
       </TransitionSeries>
@@ -129,12 +150,34 @@ const SpreadsheetChaosWrapper: React.FC = () => {
 
 const DashboardZenWrapper: React.FC = () => {
   const frame = useCurrentFrame();
-  // Start count-up earlier (15 frames) - earn trust faster
+  // Toggle between real screenshot and synthetic dashboard
+  if (USE_REAL_SCREENSHOT) {
+    return <DashboardScreenshot frame={frame} />;
+  }
+  // Fallback to synthetic dashboard with count-up
   return <DashboardZen frame={frame} startCountAtFrame={15} />;
 };
 
 const MobileSceneWrapper: React.FC = () => {
   const frame = useCurrentFrame();
+
+  // Toggle between tip breakdown and simple notification
+  if (USE_TIP_BREAKDOWN) {
+    return (
+      <AbsoluteFill
+        style={{
+          backgroundColor: COLORS.offWhite,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <IPhoneMockup scale={1.8}>
+          <TipBreakdown frame={frame} />
+        </IPhoneMockup>
+      </AbsoluteFill>
+    );
+  }
+
   return (
     <AbsoluteFill
       style={{
@@ -148,6 +191,11 @@ const MobileSceneWrapper: React.FC = () => {
       </IPhoneMockup>
     </AbsoluteFill>
   );
+};
+
+const TrustStatsWrapper: React.FC = () => {
+  const frame = useCurrentFrame();
+  return <TrustStats frame={frame} />;
 };
 
 const CTAWrapper: React.FC = () => {
