@@ -20,6 +20,7 @@ import { IPhoneMockup } from './components/IPhoneMockup';
 import { TrustStats } from './components/TrustStats';
 import { CTAEndCard } from './components/CTAEndCard';
 import { IMessageColdOpen, IMESSAGE_SCENE_DURATION } from './components/IMessageColdOpen';
+import { IMessageResolution, IMESSAGE_RESOLUTION_DURATION } from './components/IMessageResolution';
 
 // Toggle to use real screenshot vs synthetic dashboard
 const USE_REAL_SCREENSHOT = true;
@@ -93,41 +94,26 @@ export const TippdVideo: React.FC = () => {
           timing={linearTiming({ durationInFrames: 25 })}
         />
 
-        {/* Scene 3: Solution - Dashboard Reveal - 180 frames (6s) with full animation sequence */}
-        <TransitionSeries.Sequence durationInFrames={180}>
+        {/* Scene 3: Solution - Dashboard Reveal + TipBreakdown - 185 frames */}
+        <TransitionSeries.Sequence durationInFrames={185}>
           <DashboardZenWrapper />
         </TransitionSeries.Sequence>
 
-        {/* Transition 3: Slide Up with deliberate motion */}
-        <TransitionSeries.Transition
-          presentation={slide({ direction: 'from-bottom' })}
-          timing={linearTiming({ durationInFrames: 25 })}
-        />
+        {/* No transition - Scene 3 pullback and Scene 4 push-forward handle the visual handoff */}
 
-        {/* Scene 4: Mobile Trust - 90 frames (tighter post-checkmark) */}
-        <TransitionSeries.Sequence durationInFrames={90}>
-          <MobileSceneWrapper />
+        {/* Scene 4: iMessage Resolution - conversation continues */}
+        <TransitionSeries.Sequence durationInFrames={IMESSAGE_RESOLUTION_DURATION}>
+          <IMessageResolutionWrapper />
         </TransitionSeries.Sequence>
 
-        {/* Transition 4: Fade to trust stats */}
+        {/* Transition: Fade to CTA */}
         <TransitionSeries.Transition
           presentation={fade()}
           timing={linearTiming({ durationInFrames: 20 })}
         />
 
-        {/* Scene 5: Trust Stats - 75 frames (credibility beat) */}
-        <TransitionSeries.Sequence durationInFrames={75}>
-          <TrustStatsWrapper />
-        </TransitionSeries.Sequence>
-
-        {/* Transition 5: Fade to CTA */}
-        <TransitionSeries.Transition
-          presentation={fade()}
-          timing={linearTiming({ durationInFrames: 20 })}
-        />
-
-        {/* Scene 6: CTA - CTAEndCard - 90 frames */}
-        <TransitionSeries.Sequence durationInFrames={90}>
+        {/* Final Scene: CTA - CTAEndCard - 120 frames */}
+        <TransitionSeries.Sequence durationInFrames={120}>
           <CTAWrapper />
         </TransitionSeries.Sequence>
       </TransitionSeries>
@@ -197,6 +183,11 @@ const MobileSceneWrapper: React.FC = () => {
 const TrustStatsWrapper: React.FC = () => {
   const frame = useCurrentFrame();
   return <TrustStats frame={frame} />;
+};
+
+const IMessageResolutionWrapper: React.FC = () => {
+  const frame = useCurrentFrame();
+  return <IMessageResolution frame={frame} />;
 };
 
 const CTAWrapper: React.FC = () => {
