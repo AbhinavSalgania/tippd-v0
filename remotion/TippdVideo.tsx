@@ -2,13 +2,13 @@ import React from 'react';
 import {
   AbsoluteFill,
   useCurrentFrame,
-  interpolate,
-  Easing,
 } from 'remotion';
 import { TransitionSeries, linearTiming } from '@remotion/transitions';
-import { wipe } from '@remotion/transitions/wipe';
 import { slide } from '@remotion/transitions/slide';
 import { fade } from '@remotion/transitions/fade';
+
+// Custom transitions
+import { lightWipe } from './components/LightWipeTransition';
 
 // Import component files
 import { SpreadsheetChaos } from './components/SpreadsheetChaos';
@@ -19,6 +19,7 @@ import { TipBreakdown } from './components/TipBreakdown';
 import { IPhoneMockup } from './components/IPhoneMockup';
 import { TrustStats } from './components/TrustStats';
 import { CTAEndCard } from './components/CTAEndCard';
+import { IMessageColdOpen, IMESSAGE_SCENE_DURATION } from './components/IMessageColdOpen';
 
 // Toggle to use real screenshot vs synthetic dashboard
 const USE_REAL_SCREENSHOT = true;
@@ -43,13 +44,13 @@ const FONTS = {
 };
 
 // ============================================
-// TIMELINE (30fps, 1080x1920 vertical) - WITH TRUST STATS
+// TIMELINE (30fps, 1080x1920 vertical) - WITH IMESSAGE COLD OPEN
 // ============================================
-// Scene 1 - Hook:        75 frames (2.5s) - let "broken" breathe
-// Transition: Wipe       20 frames (eased)
-// Scene 2 - Problem:     105 frames (3.5s) - compressed chaos
-// Transition: Fade       40 frames (softer emotional bridge)
-// Scene 3 - Solution:    120 frames (4s) - tighter, no dead air
+// Scene 1 - iMessage:    170 frames - cold open hook + dramatic pullback
+// Transition: Fade       15 frames (smooth bridge after pullback)
+// Scene 2 - Problem:     125 frames - spreadsheet chaos + uniform blackout + text holds 1.5s
+// Transition: LightWipe  25 frames (bright wipe - darkness to light)
+// Scene 3 - Solution:    180 frames (6s) - dashboard reveal, scroll, click, breakdown, final text
 // Transition: Slide      25 frames (with scale)
 // Scene 4 - Mobile:      90 frames (3s) - tighter post-checkmark
 // Transition: Fade       20 frames
@@ -70,30 +71,30 @@ export const TippdVideo: React.FC = () => {
       }}
     >
       <TransitionSeries>
-        {/* Scene 1: Hook - 75 frames (let "broken" breathe) */}
-        <TransitionSeries.Sequence durationInFrames={75}>
-          <HookSceneWrapper />
+        {/* Scene 1: iMessage Cold Open - ~195 frames (realistic typing) */}
+        <TransitionSeries.Sequence durationInFrames={IMESSAGE_SCENE_DURATION}>
+          <IMessageColdOpenWrapper />
         </TransitionSeries.Sequence>
 
-        {/* Transition 1: Wipe Right - eased entry into chaos */}
+        {/* Transition 1: Fade - smooth bridge after pullback */}
         <TransitionSeries.Transition
-          presentation={wipe({ direction: 'from-right' })}
-          timing={linearTiming({ durationInFrames: 20 })}
+          presentation={fade()}
+          timing={linearTiming({ durationInFrames: 15 })}
         />
 
-        {/* Scene 2: Problem - SpreadsheetChaos - 105 frames (compressed chaos) */}
-        <TransitionSeries.Sequence durationInFrames={105}>
+        {/* Scene 2: Problem - THE BLACK BOX - 125 frames, uniform blackout, text holds 1.5s */}
+        <TransitionSeries.Sequence durationInFrames={125}>
           <SpreadsheetChaosWrapper />
         </TransitionSeries.Sequence>
 
-        {/* Transition 2: Fade - softer emotional bridge to calm */}
+        {/* Transition 2: Light Wipe - bright sweep from darkness to light */}
         <TransitionSeries.Transition
-          presentation={fade()}
-          timing={linearTiming({ durationInFrames: 40 })}
+          presentation={lightWipe()}
+          timing={linearTiming({ durationInFrames: 25 })}
         />
 
-        {/* Scene 3: Solution - DashboardZen - 120 frames (tighter, no dead air) */}
-        <TransitionSeries.Sequence durationInFrames={120}>
+        {/* Scene 3: Solution - Dashboard Reveal - 180 frames (6s) with full animation sequence */}
+        <TransitionSeries.Sequence durationInFrames={180}>
           <DashboardZenWrapper />
         </TransitionSeries.Sequence>
 
@@ -138,9 +139,9 @@ export const TippdVideo: React.FC = () => {
 // WRAPPER COMPONENTS
 // ============================================
 
-const HookSceneWrapper: React.FC = () => {
+const IMessageColdOpenWrapper: React.FC = () => {
   const frame = useCurrentFrame();
-  return <HookScene frame={frame} />;
+  return <IMessageColdOpen frame={frame} />;
 };
 
 const SpreadsheetChaosWrapper: React.FC = () => {
@@ -203,75 +204,3 @@ const CTAWrapper: React.FC = () => {
   return <CTAEndCard frame={frame} />;
 };
 
-// ============================================
-// SCENE 1: HOOK (inline - no separate component)
-// ============================================
-const HookScene: React.FC<{ frame: number }> = ({ frame }) => {
-  const opacity = interpolate(frame, [0, 12], [0, 1], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-
-  // Back easing for slight overshoot - adds premium feel
-  const line1Y = interpolate(frame, [0, 22], [60, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-    easing: Easing.out(Easing.back(1.2)),
-  });
-
-  const line2Y = interpolate(frame, [8, 30], [60, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-    easing: Easing.out(Easing.back(1.2)),
-  });
-
-  const line2Opacity = interpolate(frame, [8, 16], [0, 1], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-
-  return (
-    <AbsoluteFill
-      style={{
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '0 60px',
-        opacity,
-        backgroundColor: COLORS.white,
-      }}
-    >
-      <div style={{ textAlign: 'center' }}>
-        <h1
-          style={{
-            fontSize: 72,
-            fontWeight: 700,
-            color: COLORS.midnight,
-            lineHeight: 1.1,
-            letterSpacing: '-0.03em',
-            margin: 0,
-            transform: `translateY(${line1Y}px)`,
-            fontFamily: FONTS.system,
-          }}
-        >
-          Tip math is
-        </h1>
-        <h1
-          style={{
-            fontSize: 72,
-            fontWeight: 700,
-            color: COLORS.red,
-            lineHeight: 1.1,
-            letterSpacing: '-0.03em',
-            margin: 0,
-            marginTop: 8,
-            transform: `translateY(${line2Y}px)`,
-            opacity: line2Opacity,
-            fontFamily: FONTS.system,
-          }}
-        >
-          broken.
-        </h1>
-      </div>
-    </AbsoluteFill>
-  );
-};

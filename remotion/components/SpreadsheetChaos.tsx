@@ -7,10 +7,12 @@ import {
   random,
   Easing,
 } from 'remotion';
+import { employees } from '../data/mockData';
 
 // ============================================
-// SPREADSHEET CHAOS SCENE
-// Visualizes the fragility of manual tip calculation
+// SPREADSHEET CHAOS SCENE - "THE BLACK BOX"
+// Green cells → Red errors → Blackout → Overlay
+// Creates feeling of chaos leading to total opacity loss
 // ============================================
 
 interface SpreadsheetChaosProps {
@@ -19,15 +21,20 @@ interface SpreadsheetChaosProps {
 
 // Design tokens
 const COLORS = {
+  // Green (trust) phase
   gridBorder: '#10B981',
   gridBorderLight: 'rgba(16, 185, 129, 0.3)',
   headerBg: '#F0FDF4',
   cellBg: '#FFFFFF',
   text: '#0F172A',
   textMuted: '#64748B',
+  // Red (error) phase
   error: '#EF4444',
   errorBg: '#FEE2E2',
-  errorOverlay: 'rgba(239, 68, 68, 0.08)',
+  // Black box phase
+  black: '#000000',
+  overlayBg: 'rgba(0, 0, 0, 0.92)',
+  white: '#FFFFFF',
 };
 
 const FONTS = {
@@ -40,78 +47,137 @@ interface CellData {
   value: string;
   isHeader: boolean;
   isFormula: boolean;
-  errorFrame?: number; // Frame when this cell breaks
+  errorFrame?: number;
 }
 
-// Initial spreadsheet data - looks trustworthy
-const SPREADSHEET_DATA: CellData[][] = [
+// Error messages
+const ERROR_MESSAGES = ['#REF!', '#DIV/0!', 'ERROR', '#VALUE!', '#N/A'];
+
+// Extra employee names for more rows - enough to fill full screen
+const EXTRA_STAFF = [
+  { name: 'Alex P.', sales: 589.25, tips: 112.50, net: 94.75 },
+  { name: 'Jordan K.', sales: 723.00, tips: 138.20, net: 118.40 },
+  { name: 'Taylor S.', sales: 445.50, tips: 89.10, net: 72.30 },
+  { name: 'Morgan R.', sales: 812.75, tips: 162.55, net: 139.80 },
+  { name: 'Casey M.', sales: 534.00, tips: 106.80, net: 89.45 },
+  { name: 'Riley B.', sales: 667.25, tips: 133.45, net: 112.90 },
+  { name: 'Quinn D.', sales: 398.50, tips: 79.70, net: 65.25 },
+  { name: 'Avery L.', sales: 756.00, tips: 151.20, net: 128.50 },
+  { name: 'Drew H.', sales: 623.75, tips: 124.75, net: 105.60 },
+  { name: 'Sam W.', sales: 489.00, tips: 97.80, net: 81.35 },
+  { name: 'Jamie F.', sales: 712.50, tips: 142.50, net: 121.25 },
+  { name: 'Blake N.', sales: 567.00, tips: 113.40, net: 95.80 },
+  { name: 'Reese T.', sales: 834.25, tips: 166.85, net: 142.30 },
+  { name: 'Parker J.', sales: 445.75, tips: 89.15, net: 74.60 },
+  { name: 'Skyler M.', sales: 678.50, tips: 135.70, net: 115.40 },
+  { name: 'Dakota R.', sales: 523.00, tips: 104.60, net: 88.25 },
+  { name: 'Finley C.', sales: 789.25, tips: 157.85, net: 134.50 },
+  { name: 'Rowan B.', sales: 456.50, tips: 91.30, net: 76.80 },
+  { name: 'Kendall S.', sales: 612.75, tips: 122.55, net: 103.90 },
+  { name: 'Sage L.', sales: 534.25, tips: 106.85, net: 90.45 },
+  { name: 'Phoenix K.', sales: 745.00, tips: 149.00, net: 126.80 },
+  { name: 'River A.', sales: 489.50, tips: 97.90, net: 82.40 },
+  { name: 'Emery D.', sales: 667.75, tips: 133.55, net: 113.20 },
+  { name: 'Lennox P.', sales: 578.25, tips: 115.65, net: 97.90 },
+  { name: 'Marlowe H.', sales: 823.50, tips: 164.70, net: 140.10 },
+];
+
+// Build spreadsheet data from mock data
+const buildSpreadsheetData = (): CellData[][] => {
+  const data: CellData[][] = [];
+
   // Header row
-  [
+  data.push([
     { value: 'Server', isHeader: true, isFormula: false },
     { value: 'Sales', isHeader: true, isFormula: false },
     { value: 'Tips', isHeader: true, isFormula: false },
     { value: 'Kitchen', isHeader: true, isFormula: false },
     { value: 'Bar', isHeader: true, isFormula: false },
     { value: 'Net', isHeader: true, isFormula: false },
-  ],
-  // Data rows
-  [
-    { value: 'Sarah M.', isHeader: false, isFormula: false },
-    { value: '$892.50', isHeader: false, isFormula: false },
-    { value: '$178.50', isHeader: false, isFormula: false },
-    { value: '$17.85', isHeader: false, isFormula: true, errorFrame: 45 },
-    { value: '$4.46', isHeader: false, isFormula: true, errorFrame: 55 },
-    { value: '$156.19', isHeader: false, isFormula: true, errorFrame: 70 },
-  ],
-  [
-    { value: 'Mike T.', isHeader: false, isFormula: false },
-    { value: '$756.00', isHeader: false, isFormula: false },
-    { value: '$151.20', isHeader: false, isFormula: false },
-    { value: '$15.12', isHeader: false, isFormula: true, errorFrame: 50 },
-    { value: '$3.78', isHeader: false, isFormula: true, errorFrame: 60 },
-    { value: '$132.30', isHeader: false, isFormula: true, errorFrame: 75 },
-  ],
-  [
-    { value: 'Jake R.', isHeader: false, isFormula: false },
-    { value: '$1,204.00', isHeader: false, isFormula: false },
-    { value: '$241.00', isHeader: false, isFormula: false },
-    { value: '$24.08', isHeader: false, isFormula: true, errorFrame: 42 },
-    { value: '$6.02', isHeader: false, isFormula: true, errorFrame: 52 },
-    { value: '$210.90', isHeader: false, isFormula: true, errorFrame: 68 },
-  ],
-  [
-    { value: 'Emma L.', isHeader: false, isFormula: false },
-    { value: '$634.25', isHeader: false, isFormula: false },
-    { value: '$127.85', isHeader: false, isFormula: false },
-    { value: '$12.69', isHeader: false, isFormula: true, errorFrame: 48 },
-    { value: '$3.17', isHeader: false, isFormula: true, errorFrame: 58 },
-    { value: '$111.99', isHeader: false, isFormula: true, errorFrame: 72 },
-  ],
-  // Totals row
-  [
-    { value: 'TOTAL', isHeader: false, isFormula: false },
-    { value: '$3,486.75', isHeader: false, isFormula: true, errorFrame: 65 },
-    { value: '$698.55', isHeader: false, isFormula: true, errorFrame: 62 },
-    { value: '$69.74', isHeader: false, isFormula: true, errorFrame: 40 },
-    { value: '$17.43', isHeader: false, isFormula: true, errorFrame: 54 },
-    { value: '$611.38', isHeader: false, isFormula: true, errorFrame: 78 },
-  ],
-];
+  ]);
 
-// Error messages that replace broken formulas
-const ERROR_MESSAGES = ['#REF!', '#DIV/0!', 'ERROR', '#VALUE!', '#N/A'];
+  // Data rows from employees - errors cascade across cells
+  employees.forEach((emp, idx) => {
+    const baseErrorFrame = 18 + idx * 2;
+    data.push([
+      { value: emp.name, isHeader: false, isFormula: false },
+      { value: `$${emp.sales.toFixed(2)}`, isHeader: false, isFormula: false },
+      { value: `$${emp.tipsCollected.toFixed(2)}`, isHeader: false, isFormula: false },
+      { value: `$${(emp.tipsCollected * 0.1).toFixed(2)}`, isHeader: false, isFormula: true, errorFrame: baseErrorFrame },
+      { value: `$${(emp.tipsCollected * 0.025).toFixed(2)}`, isHeader: false, isFormula: true, errorFrame: baseErrorFrame + 3 },
+      { value: `$${emp.netPayout.toFixed(2)}`, isHeader: false, isFormula: true, errorFrame: baseErrorFrame + 6 },
+    ]);
+  });
+
+  // Add extra staff rows to fill the screen
+  EXTRA_STAFF.forEach((staff, idx) => {
+    const baseErrorFrame = 28 + idx * 1; // Faster cascade for extra rows
+    data.push([
+      { value: staff.name, isHeader: false, isFormula: false },
+      { value: `$${staff.sales.toFixed(2)}`, isHeader: false, isFormula: false },
+      { value: `$${staff.tips.toFixed(2)}`, isHeader: false, isFormula: false },
+      { value: `$${(staff.tips * 0.1).toFixed(2)}`, isHeader: false, isFormula: true, errorFrame: baseErrorFrame },
+      { value: `$${(staff.tips * 0.025).toFixed(2)}`, isHeader: false, isFormula: true, errorFrame: baseErrorFrame + 2 },
+      { value: `$${staff.net.toFixed(2)}`, isHeader: false, isFormula: true, errorFrame: baseErrorFrame + 4 },
+    ]);
+  });
+
+  // Totals row - errors hit totals last
+  data.push([
+    { value: 'TOTAL', isHeader: false, isFormula: false },
+    { value: '$8,742.50', isHeader: false, isFormula: true, errorFrame: 38 },
+    { value: '$1,748.50', isHeader: false, isFormula: true, errorFrame: 39 },
+    { value: '$174.85', isHeader: false, isFormula: true, errorFrame: 40 },
+    { value: '$43.71', isHeader: false, isFormula: true, errorFrame: 41 },
+    { value: '$1,530.44', isHeader: false, isFormula: true, errorFrame: 42 },
+  ]);
+
+  return data;
+};
+
+const SPREADSHEET_DATA = buildSpreadsheetData();
+
+// Timeline constants (30fps, 125 frames total - text holds 1.5s)
+const BLACKOUT_START = 72; // Delayed - let red errors breathe
+const BLACKOUT_END = 82; // Fully black (faster uniform blackout)
+const OVERLAY_APPEAR = 80; // When text overlay slides in
+// Scene ends at frame 125 - text visible for 45 frames (1.5s)
 
 export const SpreadsheetChaos: React.FC<SpreadsheetChaosProps> = ({ frame }) => {
   const { fps } = useVideoConfig();
 
-  // Scene-level opacity - fade in only, TransitionSeries handles exit
-  const sceneOpacity = interpolate(frame, [0, 15], [0, 1], {
+  // Scene entrance
+  const sceneOpacity = interpolate(frame, [0, 12], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
 
-  // Background tint toward red as chaos increases
-  const bgTint = interpolate(frame, [30, 90], [0, 0.03], {
+  // Blackout progress - spreadsheet fades to black
+  const blackoutProgress = interpolate(frame, [BLACKOUT_START, BLACKOUT_END], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+
+  // Blur increases as chaos grows, then heavy blur during blackout
+  const chaosBlur = interpolate(frame, [28, BLACKOUT_START, BLACKOUT_END], [0, 1.5, 5], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+
+  // "THE BLACK BOX" overlay animation
+  const overlayFrame = Math.max(0, frame - OVERLAY_APPEAR);
+  const overlaySpring = spring({
+    frame: overlayFrame,
+    fps,
+    config: { damping: 18, stiffness: 120, mass: 1 }, // Slower, smoother spring
+  });
+
+  const overlayOpacity = frame >= OVERLAY_APPEAR ? overlaySpring : 0;
+  // Slide down from top (-300px) to center (0) - smoother motion
+  const overlayY = interpolate(overlaySpring, [0, 1], [-300, 0]);
+
+  // Full-screen uniform blackout overlay
+  const fullBlackoutOpacity = interpolate(frame, [BLACKOUT_START, BLACKOUT_END], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -119,42 +185,108 @@ export const SpreadsheetChaos: React.FC<SpreadsheetChaosProps> = ({ frame }) => 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: `rgba(239, 68, 68, ${bgTint})`,
+        backgroundColor: COLORS.cellBg,
         opacity: sceneOpacity,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 40,
+        overflow: 'hidden',
       }}
     >
-      {/* Title */}
-      <SceneTitle frame={frame} />
+      {/* Title at top - stays visible until blackout */}
+      <SceneTitle frame={frame} blackoutProgress={fullBlackoutOpacity} />
 
-      {/* Spreadsheet Grid */}
+      {/* Spreadsheet container - fills screen below title */}
       <div
         style={{
-          position: 'relative',
-          width: '100%',
-          maxWidth: 950,
-          marginTop: 100,
+          position: 'absolute',
+          top: 180,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          overflow: 'hidden',
         }}
       >
-        <SpreadsheetGrid frame={frame} fps={fps} />
-
-        {/* Error Badge Overlay */}
-        {frame >= 60 && <ErrorBadge frame={frame - 60} fps={fps} />}
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            filter: `blur(${chaosBlur}px)`,
+          }}
+        >
+          <SpreadsheetGrid frame={frame} fps={fps} blackoutProgress={blackoutProgress} />
+        </div>
       </div>
+
+      {/* FULL-SCREEN UNIFORM BLACKOUT - covers everything uniformly */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: COLORS.black,
+          opacity: fullBlackoutOpacity,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Text overlay - slides down from top, appears on dark screen */}
+      {frame >= OVERLAY_APPEAR && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            opacity: overlayOpacity,
+            transform: `translateY(${overlayY}px)`,
+            pointerEvents: 'none',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.92)',
+              padding: '55px 70px',
+              borderRadius: 20,
+              textAlign: 'center',
+              boxShadow: '0 25px 80px rgba(0, 0, 0, 0.6)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+            }}
+          >
+            <p
+              style={{
+                fontSize: 44,
+                fontWeight: 600,
+                color: COLORS.white,
+                fontFamily: FONTS.system,
+                margin: 0,
+                letterSpacing: '0.02em',
+                lineHeight: 1.5,
+              }}
+            >
+              Complex math. Zero context. No trust.
+            </p>
+          </div>
+        </div>
+      )}
     </AbsoluteFill>
   );
 };
 
-// Scene title component - subtitle style, not headline
-const SceneTitle: React.FC<{ frame: number }> = ({ frame }) => {
-  const opacity = interpolate(frame, [0, 15], [0, 1], {
+// Scene title at top - fades out during blackout
+const SceneTitle: React.FC<{ frame: number; blackoutProgress: number }> = ({ frame, blackoutProgress }) => {
+  const entranceOpacity = interpolate(frame, [0, 12], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
 
-  const y = interpolate(frame, [0, 15], [20, 0], {
+  // Fade out as screen goes dark
+  const fadeOut = interpolate(blackoutProgress, [0, 0.8], [1, 0], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+
+  const y = interpolate(frame, [0, 12], [20, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
     easing: Easing.out(Easing.cubic),
@@ -164,23 +296,24 @@ const SceneTitle: React.FC<{ frame: number }> = ({ frame }) => {
     <div
       style={{
         position: 'absolute',
-        top: 80,
+        top: 50,
         left: 0,
         right: 0,
         textAlign: 'center',
-        opacity,
+        opacity: entranceOpacity * fadeOut,
         transform: `translateY(${y}px)`,
+        zIndex: 10,
       }}
     >
       <p
         style={{
-          fontSize: 16,
+          fontSize: 24,
           fontWeight: 600,
           color: COLORS.textMuted,
           textTransform: 'uppercase',
-          letterSpacing: '0.15em',
+          letterSpacing: '0.18em',
           margin: 0,
-          marginBottom: 10,
+          marginBottom: 12,
           fontFamily: FONTS.system,
         }}
       >
@@ -188,7 +321,7 @@ const SceneTitle: React.FC<{ frame: number }> = ({ frame }) => {
       </p>
       <h2
         style={{
-          fontSize: 42,
+          fontSize: 58,
           fontWeight: 700,
           color: COLORS.text,
           margin: 0,
@@ -202,19 +335,19 @@ const SceneTitle: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// Main spreadsheet grid
-const SpreadsheetGrid: React.FC<{ frame: number; fps: number }> = ({
+// Spreadsheet grid
+const SpreadsheetGrid: React.FC<{ frame: number; fps: number; blackoutProgress: number }> = ({
   frame,
   fps,
+  blackoutProgress,
 }) => {
-  // Grid entrance animation
   const gridScale = spring({
     frame: frame - 5,
     fps,
     config: { damping: 20, mass: 0.8 },
   });
 
-  const gridOpacity = interpolate(frame, [5, 20], [0, 1], {
+  const gridOpacity = interpolate(frame, [5, 18], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -223,12 +356,13 @@ const SpreadsheetGrid: React.FC<{ frame: number; fps: number }> = ({
     <div
       style={{
         backgroundColor: COLORS.cellBg,
-        borderRadius: 12,
-        border: `2px solid ${COLORS.gridBorder}`,
+        borderRadius: 0,
+        border: 'none',
         overflow: 'hidden',
-        boxShadow: '0 8px 40px rgba(0, 0, 0, 0.08)',
+        height: '100%',
         opacity: gridOpacity,
         transform: `scale(${Math.min(gridScale, 1)})`,
+        transformOrigin: 'top center',
       }}
     >
       {SPREADSHEET_DATA.map((row, rowIndex) => (
@@ -237,75 +371,71 @@ const SpreadsheetGrid: React.FC<{ frame: number; fps: number }> = ({
           cells={row}
           rowIndex={rowIndex}
           frame={frame}
-          fps={fps}
+          blackoutProgress={blackoutProgress}
         />
       ))}
     </div>
   );
 };
 
-// Spreadsheet row component
+// Spreadsheet row
 const SpreadsheetRow: React.FC<{
   cells: CellData[];
   rowIndex: number;
   frame: number;
-  fps: number;
-}> = ({ cells, rowIndex, frame, fps }) => {
+  blackoutProgress: number;
+}> = ({ cells, rowIndex, frame, blackoutProgress }) => {
   const isHeader = rowIndex === 0;
   const isTotals = rowIndex === SPREADSHEET_DATA.length - 1;
 
-  // Row entrance stagger
-  const rowDelay = rowIndex * 4;
+  const rowDelay = rowIndex * 1; // Faster stagger for more rows
   const rowFrame = frame - rowDelay;
 
-  const rowOpacity = interpolate(rowFrame, [0, 15], [0, 1], {
+  const rowOpacity = interpolate(rowFrame, [0, 8], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
 
-  const rowX = interpolate(rowFrame, [0, 18], [-40, 0], {
+  const rowX = interpolate(rowFrame, [0, 10], [-20, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
     easing: Easing.out(Easing.cubic),
   });
 
-  // Chaos: Row drift after frame 30
-  const chaosActive = frame > 30 && !isHeader;
+  // Row shake during chaos
+  const chaosActive = frame > 25 && !isHeader && blackoutProgress < 0.5;
   const driftSeed = `row-drift-${rowIndex}`;
   const driftAmount = chaosActive
-    ? interpolate(frame, [30, 90], [0, 1], {
+    ? interpolate(frame, [25, 45], [0, 1], {
         extrapolateLeft: 'clamp',
         extrapolateRight: 'clamp',
       })
     : 0;
 
-  const rowDriftX = chaosActive
-    ? (random(driftSeed + '-x') - 0.5) * 12 * driftAmount
-    : 0;
-  const rowDriftY = chaosActive
-    ? (random(driftSeed + '-y') - 0.5) * 6 * driftAmount
-    : 0;
-  const rowRotation = chaosActive
-    ? (random(driftSeed + '-r') - 0.5) * 2 * driftAmount
-    : 0;
+  const rowDriftX = chaosActive ? (random(driftSeed + '-x') - 0.5) * 8 * driftAmount : 0;
+  const rowDriftY = chaosActive ? (random(driftSeed + '-y') - 0.5) * 4 * driftAmount : 0;
+
+  // Background darkens during blackout
+  const bgDarken = interpolate(blackoutProgress, [0, 1], [0, 0.9], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
 
   return (
     <div
       style={{
         display: 'grid',
         gridTemplateColumns: '1.2fr 1fr 1fr 0.9fr 0.8fr 1fr',
-        borderBottom:
-          rowIndex < SPREADSHEET_DATA.length - 1
-            ? `1px solid ${COLORS.gridBorderLight}`
-            : 'none',
+        borderBottom: rowIndex < SPREADSHEET_DATA.length - 1
+          ? `1px solid ${COLORS.gridBorderLight}`
+          : 'none',
         backgroundColor: isHeader
-          ? COLORS.headerBg
+          ? `rgba(240, 253, 244, ${1 - bgDarken})`
           : isTotals
-          ? '#F8FAFC'
-          : COLORS.cellBg,
+          ? `rgba(248, 250, 252, ${1 - bgDarken})`
+          : `rgba(255, 255, 255, ${1 - bgDarken})`,
         opacity: rowOpacity,
-        transform: `translateX(${rowX + rowDriftX}px) translateY(${rowDriftY}px) rotate(${rowRotation}deg)`,
-        transformOrigin: 'center center',
+        transform: `translateX(${rowX + rowDriftX}px) translateY(${rowDriftY}px)`,
       }}
     >
       {cells.map((cell, cellIndex) => (
@@ -315,65 +445,48 @@ const SpreadsheetRow: React.FC<{
           rowIndex={rowIndex}
           cellIndex={cellIndex}
           frame={frame}
-          fps={fps}
+          blackoutProgress={blackoutProgress}
         />
       ))}
     </div>
   );
 };
 
-// Individual cell component
+// Individual cell
 const SpreadsheetCell: React.FC<{
   cell: CellData;
   rowIndex: number;
   cellIndex: number;
   frame: number;
-  fps: number;
-}> = ({ cell, rowIndex, cellIndex, frame }) => {
+  blackoutProgress: number;
+}> = ({ cell, rowIndex, cellIndex, frame, blackoutProgress }) => {
   const { isHeader, isFormula, errorFrame, value } = cell;
 
-  // Determine if this cell is broken
+  // Cell breaks when frame >= errorFrame
   const isBroken = isFormula && errorFrame !== undefined && frame >= errorFrame;
 
-  // Cell-specific chaos drift
-  const chaosActive = frame > 30 && !isHeader;
-  const cellSeed = `cell-${rowIndex}-${cellIndex}`;
-  const driftAmount = chaosActive
-    ? interpolate(frame, [30, 90], [0, 1], {
-        extrapolateLeft: 'clamp',
-        extrapolateRight: 'clamp',
-      })
-    : 0;
-
-  const cellDriftX = chaosActive
-    ? (random(cellSeed + '-x') - 0.5) * 4 * driftAmount
-    : 0;
-  const cellRotation = chaosActive
-    ? (random(cellSeed + '-r') - 0.5) * 3 * driftAmount
-    : 0;
-
-  // Error transition
+  // Error transition animation
   const errorProgress = isBroken
-    ? interpolate(frame, [errorFrame!, errorFrame! + 8], [0, 1], {
+    ? interpolate(frame, [errorFrame!, errorFrame! + 6], [0, 1], {
         extrapolateLeft: 'clamp',
         extrapolateRight: 'clamp',
       })
     : 0;
 
-  // Get deterministic error message
+  // Get error message
+  const cellSeed = `cell-${rowIndex}-${cellIndex}`;
   const errorIndex = Math.floor(random(cellSeed + '-error') * ERROR_MESSAGES.length);
-  const displayValue = isBroken && errorProgress > 0.5
-    ? ERROR_MESSAGES[errorIndex]
-    : value;
+  const displayValue = isBroken && errorProgress > 0.5 ? ERROR_MESSAGES[errorIndex] : value;
 
-  // Background color transition
-  const bgColor = isBroken
-    ? interpolate(
-        errorProgress,
-        [0, 1],
-        [0, 1]
-      )
-    : 0;
+  // Background: green → red → black
+  const redBg = isBroken ? errorProgress * 0.6 : 0;
+  const blackBg = blackoutProgress * 0.9;
+
+  // Text color: normal → red → fades to dark
+  const textOpacity = interpolate(blackoutProgress, [0.3, 0.8], [1, 0.2], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
 
   const isNumeric = !isHeader && cellIndex > 0;
   const isTotals = rowIndex === SPREADSHEET_DATA.length - 1;
@@ -382,79 +495,29 @@ const SpreadsheetCell: React.FC<{
   return (
     <div
       style={{
-        padding: '14px 12px',
-        fontSize: isHeader ? 13 : 16,
+        padding: '10px 10px',
+        fontSize: isHeader ? 12 : 14,
         fontWeight: isHeader || isTotals ? 700 : 500,
         fontFamily: isNumeric || isBroken ? FONTS.mono : FONTS.system,
-        color: isBroken && errorProgress > 0.5 ? COLORS.error : isHeader ? COLORS.text : COLORS.textMuted,
-        backgroundColor: `rgba(254, 226, 226, ${bgColor * 0.6})`,
+        color: isBroken && errorProgress > 0.5
+          ? COLORS.error
+          : isHeader
+          ? COLORS.text
+          : COLORS.textMuted,
+        opacity: textOpacity,
+        backgroundColor: blackBg > redBg
+          ? `rgba(0, 0, 0, ${blackBg})`
+          : `rgba(254, 226, 226, ${redBg})`,
         textAlign: isName ? 'left' : isNumeric ? 'right' : 'center',
         textTransform: isHeader ? 'uppercase' : 'none',
         letterSpacing: isHeader ? '0.08em' : 'normal',
         borderRight: cellIndex < 5 ? `1px solid ${COLORS.gridBorderLight}` : 'none',
-        transform: `translateX(${cellDriftX}px) rotate(${cellRotation}deg)`,
-        transition: 'background-color 0.15s ease',
         whiteSpace: 'nowrap',
         overflow: 'hidden',
+        transition: 'background-color 0.15s ease',
       }}
     >
       {displayValue}
-    </div>
-  );
-};
-
-// Error badge overlay
-const ErrorBadge: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
-  // Snappier spring for more punch - reduced damping, increased stiffness
-  const badgeScale = spring({
-    frame,
-    fps,
-    config: { damping: 8, mass: 0.6, stiffness: 300 },
-  });
-
-  // Slight rotation
-  const rotation = interpolate(frame, [0, 8], [-4, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-    easing: Easing.out(Easing.cubic),
-  });
-
-  // Badge shake for emphasis
-  const shakeAmount = interpolate(frame, [8, 15, 20], [0, 3, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-  const shakeX = Math.sin(frame * 0.8) * shakeAmount;
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: `translate(-50%, -50%) scale(${badgeScale}) rotate(${rotation}deg) translateX(${shakeX}px)`,
-        zIndex: 10,
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: COLORS.error,
-          color: COLORS.cellBg,
-          padding: '28px 56px',
-          borderRadius: 16,
-          fontSize: 36,
-          fontWeight: 800,
-          fontFamily: FONTS.mono,
-          letterSpacing: '0.02em',
-          boxShadow: `
-            0 12px 40px rgba(239, 68, 68, 0.5),
-            0 4px 12px rgba(239, 68, 68, 0.3)
-          `,
-          textAlign: 'center',
-        }}
-      >
-        FORMULAS BROKEN
-      </div>
     </div>
   );
 };
