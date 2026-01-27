@@ -4,7 +4,7 @@ import { ProblemSection } from "@/app/landing/components/ui/ProblemSection";
 import { HowItWorksSection } from "@/app/landing/components/ui/HowItWorksSection";
 import { FeaturesSection } from "@/app/landing/components/ui/FeaturesSection";
 import { ROICalculator } from "@/app/landing/components/ui/ROICalculator";
-import { TestimonialsSection } from "@/app/landing/components/ui/TestimonialsSection";
+// import { TestimonialsSection } from "@/app/landing/components/ui/TestimonialsSection";
 import { EmployeeBenefitSection } from "@/app/landing/components/ui/EmployeeBenefitSection";
 import { AuditProofSection } from "@/app/landing/components/ui/AuditProofSection";
 import { PricingSection } from "@/app/landing/components/ui/PricingSection";
@@ -26,7 +26,7 @@ export default function LandingPage() {
         <EmployeeBenefitSection />
         <ROICalculator />
         <AuditProofSection />
-        <TestimonialsSection />
+        {/* <TestimonialsSection /> */}
         <PricingSection />
         <FAQSection />
         <CTASection />
