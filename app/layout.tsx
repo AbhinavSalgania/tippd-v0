@@ -16,7 +16,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://tippd.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Tippd | Automated Tip Distribution for Restaurants",
+  title: "Tippd | Tip Transparency, finally.",
   description:
     "Calculate tips consistently, give your team transparency, and eliminate end-of-shift arguments. The single source of truth for tip distribution.",
   keywords: [
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "Tippd | Automated Tip Distribution for Restaurants",
+    title: "Tippd | Tip Transparency, finally.",
     description:
       "Calculate tips consistently, give your team transparency, and eliminate end-of-shift arguments.",
     type: "website",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tippd | Automated Tip Distribution for Restaurants",
+    title: "Tippd | Tip Transparency, finally.",
     description:
       "Calculate tips consistently, give your team transparency, and eliminate end-of-shift arguments.",
   },
